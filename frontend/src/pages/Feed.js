@@ -7,6 +7,11 @@ function Feed() {
   const [feed, setFeed] = useState([]);
   const [error, setError] = useState('');
   const [userProfile, setUserProfile] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmCountdown, setConfirmCountdown] = useState(0);
+  const [pendingPost, setPendingPost] = useState(null);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
 
   useEffect(() => {
     axios.get('/api/ideas')
