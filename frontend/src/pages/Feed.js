@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import StructuredIdeaForm from '../components/StructuredIdeaForm';
 import Vibes from '../components/Vibes';
+import CameraCapture from '../components/CameraCapture';
 
 function Feed() {
   const user = JSON.parse(localStorage.getItem('user'));
@@ -14,6 +15,8 @@ function Feed() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [showIdeaModal, setShowIdeaModal] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraPhoto, setCameraPhoto] = useState(null);
 
   useEffect(() => {
     axios.get('/api/ideas')
@@ -73,6 +76,12 @@ function Feed() {
   const handleIdeaSubmit = async (fields) => {
     await handleStructuredIdea(fields);
     setShowIdeaModal(false);
+    setCameraPhoto(null);
+  };
+
+  const handleAttachToIdea = (base64) => {
+    setCameraPhoto(base64);
+    setShowIdeaModal(true);
   };
 
   return (
@@ -92,27 +101,33 @@ function Feed() {
         </p>
       </div>
 
-      {/* Nueva Idea button */}
-      <div style={{display:'flex', justifyContent:'center', marginBottom: 24}}>
+      {/* Action buttons */}
+      <div style={{display:'flex', justifyContent:'center', gap: 12, marginBottom: 24, flexWrap: 'wrap'}}>
         <button
           onClick={() => setShowIdeaModal(true)}
           style={{
             background: 'linear-gradient(135deg, #7f5af0 0%, #2cb67d 100%)',
-            border: 'none',
-            borderRadius: 28,
-            padding: '12px 32px',
-            fontSize: 15,
-            fontWeight: 700,
-            color: '#fff',
-            cursor: 'pointer',
-            letterSpacing: '0.3px',
-            boxShadow: '0 0 20px rgba(127,90,240,0.4)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            border: 'none', borderRadius: 28, padding: '12px 28px',
+            fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer',
+            boxShadow: '0 0 20px rgba(127,90,240,0.4)', transition: 'transform 0.2s',
           }}
           onMouseOver={e => e.currentTarget.style.transform='scale(1.04)'}
           onMouseOut={e => e.currentTarget.style.transform='scale(1)'}
         >
           + Nueva Idea
+        </button>
+        <button
+          onClick={() => setShowCamera(true)}
+          style={{
+            background: 'linear-gradient(135deg, #f72585 0%, #7f5af0 100%)',
+            border: 'none', borderRadius: 28, padding: '12px 28px',
+            fontSize: 15, fontWeight: 700, color: '#fff', cursor: 'pointer',
+            boxShadow: '0 0 20px rgba(247,37,133,0.3)', transition: 'transform 0.2s',
+          }}
+          onMouseOver={e => e.currentTarget.style.transform='scale(1.04)'}
+          onMouseOut={e => e.currentTarget.style.transform='scale(1)'}
+        >
+          📸 Cámara
         </button>
       </div>
 
@@ -153,11 +168,18 @@ function Feed() {
               }}
             >✕</button>
             <h3 style={{marginBottom: 20, fontSize: 18, color: '#e2e8f0'}}>💡 Nueva Idea</h3>
-            <StructuredIdeaForm onSubmit={handleIdeaSubmit} />
+            <StructuredIdeaForm onSubmit={handleIdeaSubmit} initialData={cameraPhoto ? { premise:'',argument:'',evidence:'',conclusion:'',counterargument:'',media_url: cameraPhoto } : undefined} />
             {error && <div style={{color:'#ff6b6b', marginTop:10, fontSize:13}}>{error}</div>}
             <div style={{fontSize:11, color:'#475569', marginTop:8}}>Límite: 3 ideas/día.</div>
           </div>
         </div>
+      )}
+      {showCamera && (
+        <CameraCapture
+          user={user}
+          onClose={() => setShowCamera(false)}
+          onAttachToIdea={handleAttachToIdea}
+        />
       )}
       {showConfirm && (
         <div style={{background:'#fffbe6',border:'1px solid #ffe58f',borderRadius:6,padding:16,marginBottom:16}}>
