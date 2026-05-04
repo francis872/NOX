@@ -162,6 +162,36 @@
   font-weight: 400;
 }
 
+.auth-field-hint {
+  font-size: 0.78rem;
+  margin-top: 3px;
+}
+.auth-field-hint.ok { color: #2cb67d; }
+.auth-field-hint.error { color: #ff7070; }
+
+/* Date input */
+input[type="date"] {
+  color-scheme: dark;
+}
+
+/* Tags preview */
+.auth-tags-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.auth-tag {
+  background: rgba(127,90,240,0.18);
+  border: 1px solid rgba(127,90,240,0.35);
+  color: #c4b5fd;
+  border-radius: 20px;
+  padding: 3px 11px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 /* Plan info */
 .auth-plan-info {
   background: rgba(44,182,125,0.06);
