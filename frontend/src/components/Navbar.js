@@ -1,51 +1,91 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './Navbar.css';
+import logo from '../assets/noxlogo.png';
+
+const ITEMS = [
+  { icon: '📰', label: 'Feed',            path: '/feed' },
+  { icon: '⚡', label: 'Actividad',       path: '/actividad' },
+  { icon: '🔔', label: 'Notificaciones',  path: '/notificaciones' },
+  { icon: '📊', label: 'Insights',        path: '/insights' },
+  { icon: '⭐', label: 'Favoritos',       path: '/favoritos' },
+  { icon: '🚫', label: 'Bloqueos',        path: '/bloqueos' },
+  { icon: '💚', label: 'Mej. Amigos',     path: '/mejores-amigos' },
+  { icon: '👤', label: 'Perfil',          path: 'PROFILE' },
+  { icon: '🔭', label: 'Explorar',        path: '/explore' },
+  { icon: '💬', label: 'Mensajes',        path: '/mylink' },
+  { icon: '⏱️', label: 'Tiempo',          path: '/tiempo' },
+  { icon: '🔗', label: 'Cuentas',         path: '/cuentas-silenciadas' },
+  { icon: '🎛️', label: 'Preferencias',    path: '/preferencias-contenido' },
+  { icon: '💎', label: 'Suscripciones',   path: '/suscripciones' },
+  { icon: '♿', label: 'Accesibilidad',   path: '/accesibilidad' },
+  { icon: '🚪', label: 'Cerrar Sesión',   path: null, action: 'logout' },
+];
+
+const RADIUS = 180;
 
 function Navbar() {
-  const { t, i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
+  const n = ITEMS.length;
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    navigate('/login');
-    window.location.reload();
+  const go = (item) => {
+    setOpen(false);
+    if (item.action === 'logout') {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      window.location.replace('/login');
+      return;
+    }
+    const path = item.path === 'PROFILE' ? `/profile/${user?.id}` : item.path;
+    navigate(path);
   };
 
   return (
     <>
-      <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:8,flexWrap:'wrap'}}>
-        <img src={require('../assets/noxlogo.png')} alt="NOX Logo" style={{height:36}} />
-        <nav style={{display: 'flex', gap: 12, flexWrap: 'wrap'}}>
-          <Link to="/feed">{t('feed')}</Link>
-          <Link to="/actividad">Actividad</Link>
-          <Link to="/notificaciones">{t('notifications')}</Link>
-          <Link to="/insights">Insights</Link>
-          <Link to="/favoritos">Favoritos</Link>
-          <Link to="/bloqueos">Bloqueos</Link>
-          <Link to="/mejores-amigos">Mejores Amigos</Link>
-          <Link to={`/profile/${user?.id || ''}`}>{t('profile')}</Link>
-          <Link to="/explore">{t('explore')}</Link>
-          <Link to="/mylink">{t('messages')}</Link>
-          <Link to="/tiempo">Tiempo</Link>
-          <Link to="/palabras-filtradas">Palabras Filtradas</Link>
-          <Link to="/cuentas-silenciadas">Cuentas Silenciadas</Link>
-          <Link to="/preferencias-contenido">Preferencias Contenido</Link>
-          <Link to="/suscripciones">{t('subscribe')}</Link>
-          <Link to="/accesibilidad">Accesibilidad</Link>
-          {user?.is_admin && <Link to="/admin">{t('admin')}</Link>}
-        </nav>
-        <select onChange={e => i18n.changeLanguage(e.target.value)} value={i18n.language} style={{marginLeft:'auto'}}>
-          <option value="es">{t('spanish')}</option>
-          <option value="en">{t('english')}</option>
-        </select>
-        <button onClick={handleLogout} style={{padding:'4px 12px',fontSize:12,background:'#3a1a1a',marginLeft:4}}>{t('logout')}</button>
-      </div>
-      <div style={{fontSize:13, color:'#7fd7ff', marginBottom:16, fontFamily:'inherit', textAlign:'center'}}>
-        {t('welcome')}
-      </div>
+      {/* Floating trigger */}
+      <button
+        className={`nox-fab${open ? ' nox-fab--open' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        aria-label="Menú"
+      >
+        <img src={logo} alt="NOX" className="nox-fab__logo" />
+      </button>
+
+      {/* Full-screen radial overlay */}
+      {open && (
+        <div className="nox-radial-overlay" onClick={() => setOpen(false)}>
+          <div className="nox-radial-stage" onClick={e => e.stopPropagation()}>
+            {/* Center logo */}
+            <div className="nox-radial-hub">
+              <img src={logo} alt="NOX" className="nox-radial-hub__logo" />
+            </div>
+
+            {/* Radial items */}
+            {ITEMS.map((item, i) => {
+              const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+              const x = Math.round(Math.cos(angle) * RADIUS);
+              const y = Math.round(Math.sin(angle) * RADIUS);
+              return (
+                <button
+                  key={i}
+                  className="nox-radial-item"
+                  style={{
+                    '--x': `${x}px`,
+                    '--y': `${y}px`,
+                    '--delay': `${i * 22}ms`,
+                  }}
+                  onClick={() => go(item)}
+                >
+                  <span className="nox-ri__icon">{item.icon}</span>
+                  <span className="nox-ri__label">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </>
   );
 }

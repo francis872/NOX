@@ -12,6 +12,7 @@ function Feed() {
   const [pendingPost, setPendingPost] = useState(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [showIdeaModal, setShowIdeaModal] = useState(false);
 
   useEffect(() => {
     axios.get('/api/ideas')
@@ -68,22 +69,93 @@ function Feed() {
     } catch {}
   };
 
+  const handleIdeaSubmit = async (fields) => {
+    await handleStructuredIdea(fields);
+    setShowIdeaModal(false);
+  };
+
   return (
-    <div style={{maxWidth: 600, margin: '0 auto'}}>
-      <h2 style={{marginBottom:4}}>Aquí no vienes a mirar. Vienes a pensar.</h2>
-      {userProfile && (
-        <div style={{fontSize:14, color:'#7fd7ff', marginBottom:8, fontWeight:'bold', textAlign:'center'}}>
-          Tu nivel de pensamiento: {userProfile.thought_level}
+    <div style={{maxWidth: 680, margin: '0 auto', paddingTop: 24, paddingLeft: 60}}>
+      {/* Header */}
+      <div style={{textAlign:'center', marginBottom: 28, paddingTop: 12}}>
+        <h2 style={{marginBottom: 8, fontSize: 26, letterSpacing: '-0.5px'}}>Aquí no vienes a mirar. Vienes a pensar.</h2>
+        {userProfile && (
+          <div style={{fontSize:13, color:'#7fd7ff', marginBottom:10, fontWeight:'bold'}}>
+            Nivel de pensamiento: {userProfile.thought_level}
+          </div>
+        )}
+        <p style={{fontSize:14, color:'#94a3b8', margin:'0 auto', maxWidth:480, lineHeight:1.6}}>
+          🧨 La verdad cruda: No eres espectador, eres chispa. Si tu idea enciende, creces. Si solo haces ruido, el sistema te apaga.
+        </p>
+      </div>
+
+      {/* Nueva Idea button */}
+      <div style={{display:'flex', justifyContent:'center', marginBottom: 24}}>
+        <button
+          onClick={() => setShowIdeaModal(true)}
+          style={{
+            background: 'linear-gradient(135deg, #7f5af0 0%, #2cb67d 100%)',
+            border: 'none',
+            borderRadius: 28,
+            padding: '12px 32px',
+            fontSize: 15,
+            fontWeight: 700,
+            color: '#fff',
+            cursor: 'pointer',
+            letterSpacing: '0.3px',
+            boxShadow: '0 0 20px rgba(127,90,240,0.4)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+          }}
+          onMouseOver={e => e.currentTarget.style.transform='scale(1.04)'}
+          onMouseOut={e => e.currentTarget.style.transform='scale(1)'}
+        >
+          + Nueva Idea
+        </button>
+      </div>
+
+      {/* Idea modal */}
+      {showIdeaModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(4,4,14,0.88)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 8000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px 16px',
+          }}
+          onClick={() => setShowIdeaModal(false)}
+        >
+          <div
+            style={{
+              background: '#13131f',
+              border: '1px solid rgba(127,90,240,0.3)',
+              borderRadius: 16,
+              padding: '28px 24px',
+              maxWidth: 560,
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 0 40px rgba(127,90,240,0.3)',
+              position: 'relative',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowIdeaModal(false)}
+              style={{
+                position: 'absolute', top: 14, right: 16,
+                background: 'none', border: 'none',
+                color: '#64748b', fontSize: 22, cursor: 'pointer', lineHeight: 1,
+              }}
+            >✕</button>
+            <h3 style={{marginBottom: 20, fontSize: 18, color: '#e2e8f0'}}>💡 Nueva Idea</h3>
+            <StructuredIdeaForm onSubmit={handleIdeaSubmit} />
+            {error && <div style={{color:'#ff6b6b', marginTop:10, fontSize:13}}>{error}</div>}
+            <div style={{fontSize:11, color:'#475569', marginTop:8}}>Límite: 3 ideas/día.</div>
+          </div>
         </div>
       )}
-      <div style={{fontSize:15, color:'#bfc4c9', marginBottom:16, fontFamily:'inherit', textAlign:'center'}}>
-        🧨 La verdad cruda: No eres espectador, eres chispa. Si tu idea enciende, creces. Si solo haces ruido, el sistema te apaga.
-      </div>
-      <div style={{marginBottom: 16}}>
-        <StructuredIdeaForm onSubmit={handleStructuredIdea} />
-        {error && <div style={{color:'red', marginTop:8}}>{error}</div>}
-        <div style={{fontSize:11, color:'#888', marginTop:4}}>Límite: 3 ideas/día.</div>
-      </div>
       {showConfirm && (
         <div style={{background:'#fffbe6',border:'1px solid #ffe58f',borderRadius:6,padding:16,marginBottom:16}}>
           <div style={{fontWeight:'bold',marginBottom:8}}>¿Esto aporta algo?</div>
@@ -99,20 +171,23 @@ function Feed() {
           const highScore = post.score && post.score > 180;
           return (
             <div key={post.id} style={{
-              border: '1px solid #eee',
-              borderRadius: 4,
-              padding: 8,
-              marginBottom: 8,
-              background: highScore ? 'linear-gradient(90deg,#e0ffe0 60%,#fff 100%)' : '#fff',
-              boxShadow: highScore ? '0 0 8px #b6fcb6' : undefined
+              border: highScore ? '1px solid #2cb67d' : '1px solid rgba(127,90,240,0.2)',
+              borderRadius: 12,
+              padding: '16px 18px',
+              marginBottom: 14,
+              background: highScore
+                ? 'linear-gradient(135deg, rgba(44,182,125,0.08) 0%, rgba(19,19,31,0.95) 100%)'
+                : 'rgba(19,19,31,0.85)',
+              boxShadow: highScore ? '0 0 14px rgba(44,182,125,0.25)' : '0 2px 8px rgba(0,0,0,0.3)',
+              color: '#e2e8f0',
             }}>
-              <b>{post.premise}</b>
-              {highScore && <span style={{marginLeft:8, color:'#1a7f1a', fontWeight:'bold'}}>★ Idea destacada</span>}
-              <div style={{margin:'8px 0'}}>
-                <div><b>Argumento:</b> {post.argument}</div>
-                <div><b>Evidencia:</b> {post.evidence}</div>
-                <div><b>Conclusión:</b> {post.conclusion}</div>
-                {post.counterargument && <div><b>Contraargumento:</b> {post.counterargument}</div>}
+              <b style={{color:'#e2e8f0', fontSize:15}}>{post.premise}</b>
+              {highScore && <span style={{marginLeft:8, color:'#2cb67d', fontWeight:'bold'}}>★ Idea destacada</span>}
+              <div style={{margin:'10px 0', color:'#94a3b8', fontSize:13}}>
+                <div><span style={{color:'#7f5af0',fontWeight:600}}>Argumento:</span> {post.argument}</div>
+                <div><span style={{color:'#7f5af0',fontWeight:600}}>Evidencia:</span> {post.evidence}</div>
+                <div><span style={{color:'#7f5af0',fontWeight:600}}>Conclusión:</span> {post.conclusion}</div>
+                {post.counterargument && <div><span style={{color:'#7f5af0',fontWeight:600}}>Contraargumento:</span> {post.counterargument}</div>}
               </div>
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <button onClick={() => handleReact(post.id, 'ignite')} title="Encender (aporta valor)">🔥 Encender</button>
@@ -123,7 +198,7 @@ function Feed() {
                 </span>
                 <span style={{marginLeft:16, fontSize:11, color:'#888'}}>Score: {post.score && post.score.toFixed(0)}</span>
               </div>
-              <div style={{fontSize: 10, color: '#888'}}>{new Date(post.created_at).toLocaleString()}</div>
+              <div style={{fontSize: 10, color: '#475569', marginTop:6}}>{new Date(post.created_at).toLocaleString()}</div>
             </div>
           );
         })}
