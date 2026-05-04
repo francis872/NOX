@@ -104,7 +104,6 @@ export default function CameraCapture({ user, onClose, onAttachToIdea }) {
 
   return (
     <div
-      onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 9200,
         background: 'rgba(0,0,0,0.96)',
@@ -112,7 +111,6 @@ export default function CameraCapture({ user, onClose, onAttachToIdea }) {
       }}
     >
       <div
-        onClick={e => e.stopPropagation()}
         style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px', gap: 0 }}
       >
         {/* Header */}

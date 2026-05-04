@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Obtener publicaciones de un usuario
+// Obtener publicaciones (ideas) de un usuario
 router.get('/:id/posts', async (req, res) => {
   try {
-    const postsRes = await pool.query('SELECT id, content, created_at FROM posts WHERE user_id = $1 ORDER BY created_at DESC', [req.params.id]);
+    const postsRes = await pool.query(
+      'SELECT id, premise, argument, evidence, conclusion, counterargument, media_url, ignite_count, expand_count, challenge_count, created_at FROM ideas WHERE author_id = $1 ORDER BY created_at DESC',
+      [req.params.id]
+    );
     res.json(postsRes.rows);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener publicaciones' });
@@ -21,7 +24,7 @@ router.get('/:id', async (req, res) => {
     }
     const user = userRes.rows[0];
     // Contadores
-    const postsRes = await pool.query('SELECT COUNT(*) FROM posts WHERE user_id = $1', [req.params.id]);
+    const postsRes = await pool.query('SELECT COUNT(*) FROM ideas WHERE author_id = $1', [req.params.id]);
     const followersRes = await pool.query('SELECT COUNT(*) FROM followers WHERE user_id = $1', [req.params.id]);
     const followingRes = await pool.query('SELECT COUNT(*) FROM followers WHERE follower_id = $1', [req.params.id]);
     user.posts_count = parseInt(postsRes.rows[0].count);

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 import StructuredIdeaForm from '../components/StructuredIdeaForm';
 import Vibes from '../components/Vibes';
 import CameraCapture from '../components/CameraCapture';
 
 function Feed() {
   const user = JSON.parse(localStorage.getItem('user'));
+  const location = useLocation();
   const [feed, setFeed] = useState([]);
   const [error, setError] = useState('');
   const [userProfile, setUserProfile] = useState(null);
@@ -17,6 +19,16 @@ function Feed() {
   const [showIdeaModal, setShowIdeaModal] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraPhoto, setCameraPhoto] = useState(null);
+
+  // Open idea modal pre-filled if coming from Camera page
+  useEffect(() => {
+    if (location.state?.photoToAttach) {
+      setCameraPhoto(location.state.photoToAttach);
+      setShowIdeaModal(true);
+      // Clear state so back navigation doesn't re-trigger
+      window.history.replaceState({}, '');
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     axios.get('/api/ideas')
