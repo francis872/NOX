@@ -43,6 +43,7 @@ import Permisos from './pages/Permisos';
 import Ayuda from './pages/Ayuda';
 import CentroPrivacidad from './pages/CentroPrivacidad';
 import Admin from './pages/Admin';
+import Loop from './pages/Loop';
 import './darklab.css';
 
 export default function App() {
@@ -96,6 +97,7 @@ export default function App() {
           <Route path="/ayuda" element={user ? <Ayuda /> : <Navigate to="/login" />} />
           <Route path="/centro-privacidad" element={user ? <CentroPrivacidad /> : <Navigate to="/login" />} />
           <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" />} />
+          <Route path="/loop" element={user ? <Loop /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
     </ErrorBoundary>

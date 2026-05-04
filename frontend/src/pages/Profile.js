@@ -17,6 +17,7 @@ function Profile() {
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState({ bio: '', interests: '', age: '', origin: '', account_type: '' });
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('ideas');
 
   useEffect(() => {
     axios.get(`/api/users/${id}`)
@@ -105,200 +106,148 @@ function Profile() {
     .sort((a, b) => (b.challenge_count || 0) - (a.challenge_count || 0));
 
   return (
-    <div style={{maxWidth: 500, margin: '0 auto', border: '1px solid #ccc', borderRadius: 8, padding: 24}}>
-      <h2 style={{marginBottom: 0}}>{profile.username}</h2>
-      <div style={{fontSize:15, color:'#7fd7ff', marginBottom:16, fontWeight:'bold'}}>Nivel de pensamiento: {profile.thought_level}</div>
-      <h3 style={{marginTop:0, marginBottom:16, color:'#bfc4c9'}}>Cerebro Público</h3>
-      {/* Principios */}
-      <div style={{marginBottom: 16, border: '1px solid #eee', borderRadius: 4, padding: 8}}>
-        <h4>Principios</h4>
-        <ul>
-          {principios.map((p, i) => <li key={i}>{p}</li>)}
-        </ul>
+    <div style={{maxWidth: 640, margin: '0 auto', paddingTop: 16, paddingLeft: 60, paddingRight: 16, paddingBottom: 48, color: '#e2e8f0'}}>
+
+      {/* Header */}
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 20}}>
+        <span style={{fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px'}}>
+          {profile.username}
+          {profile.verified && <span style={{color:'#7f5af0', marginLeft:6, fontSize:15}}>✓</span>}
+        </span>
+        <span style={{fontSize: 24, color: '#475569', cursor:'pointer'}}>☰</span>
       </div>
-      {/* Ideas más potentes */}
-      <div style={{marginBottom: 16, border: '1px solid #eee', borderRadius: 4, padding: 8}}>
-        <h4>Ideas más potentes</h4>
-        {ideasPotentes.length === 0 ? <div>No hay ideas destacadas aún.</div> : (
-          <ul>
-            {ideasPotentes.map(idea => (
-              <li key={idea.id}>
-                <b>{idea.title}</b> <span style={{color:'#f90'}}>🔥 {idea.ignite_count || 0}</span>
-                <div style={{fontSize:12}}>{idea.body}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {/* Historial de debates */}
-      <div style={{marginBottom: 16, border: '1px solid #eee', borderRadius: 4, padding: 8}}>
-        <h4>Historial de debates</h4>
-        {debates.length === 0 ? <div>No hay debates aún.</div> : (
-          <ul>
-            {debates.map(idea => (
-              <li key={idea.id}>
-                <b>{idea.title}</b> <span style={{color:'#09f'}}>⚡ {idea.challenge_count || 0}</span>
-                <div style={{fontSize:12}}>{idea.body}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {/* Administración de cuentas (multi-cuenta) */}
-      <div style={{marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8}}>
-        <label><b>Cambiar de cuenta:</b></label>
-        <select
-          onChange={e => {
-            const user = JSON.parse(localStorage.getItem('multi_accounts') || '[]').find(u => u.id === Number(e.target.value));
-            if (user) {
-              localStorage.setItem('user', JSON.stringify(user));
-              window.location.href = `/profile/${user.id}`;
-            }
-          }}
-          value={profile.id}
-        >
-          {(JSON.parse(localStorage.getItem('multi_accounts') || '[]')).map(u => (
-            <option key={u.id} value={u.id}>{u.username}</option>
-          ))}
-        </select>
-        <button onClick={() => {
-          const accounts = JSON.parse(localStorage.getItem('multi_accounts') || '[]');
-          const current = JSON.parse(localStorage.getItem('user'));
-          if (!accounts.find(u => u.id === current.id)) {
-            accounts.push(current);
-            localStorage.setItem('multi_accounts', JSON.stringify(accounts));
-            alert('Cuenta añadida a multi-cuentas');
-          } else {
-            alert('Esta cuenta ya está añadida');
-          }
-        }}>Añadir cuenta</button>
-      </div>
-      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 16}}>
-        <div style={{position: 'absolute', right: 24, top: 24}}>
-          {profile.verified && <span style={{color: 'blue', fontWeight: 'bold'}}>✔ Verificado</span>}
-        </div>
-        <div style={{textAlign: 'center'}}>
-          <b>{profile.posts_count}</b>
-          <div>Publicaciones</div>
-        </div>
-        <div style={{textAlign: 'center'}}>
-          <b>{profile.followers_count}</b>
-          <div>Seguidores</div>
-        </div>
-        <div style={{textAlign: 'center'}}>
-          <b>{profile.following_count}</b>
-          <div>Siguiendo</div>
-        </div>
-      </div>
-      {edit ? (
-        <form onSubmit={handleEdit}>
-          <input name="bio" placeholder="Biografía" value={form.bio} onChange={handleChange} />
-          <input name="interests" placeholder="Intereses (separados por coma)" value={form.interests} onChange={handleChange} />
-          <input name="age" type="number" placeholder="Edad" value={form.age} onChange={handleChange} />
-          <input name="origin" placeholder="Origen" value={form.origin} onChange={handleChange} />
-          <button type="submit">Guardar</button>
-          <button type="button" onClick={() => setEdit(false)}>Cancelar</button>
-        </form>
-      ) : (
-        <div>
-          <p><b>Usuario:</b> {profile.username}</p>
-          <p><b>Email:</b> {profile.email}</p>
-          <p><b>Biografía:</b> {profile.bio}</p>
-          <p><b>Intereses:</b> {(profile.interests || []).join(', ')}</p>
-          <p><b>Edad:</b> {profile.age}</p>
-          <p><b>Origen:</b> {profile.origin}</p>
-          <div style={{marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap'}}>
-            <button onClick={() => setEdit(true)}>Editar perfil</button>
-            <button onClick={() => {
-              navigator.clipboard.writeText(window.location.origin + `/profile/${profile.id}`);
-              alert('¡Enlace de perfil copiado!');
-            }}>Compartir perfil</button>
-            <button onClick={() => handleAccountType('profesional')}>Panel profesional</button>
-            <button onClick={() => handleAccountType('hobby')}>Panel hobby</button>
-            <button onClick={() => handleAccountType('creativo')}>Panel creativo</button>
-            <span style={{marginLeft: 8}}><b>Tipo de cuenta:</b> {profile.account_type}</span>
-            {/* Aquí puedes agregar más opciones como administración de cuentas, privacidad, etc. */}
+
+      {/* Avatar + stats */}
+      <div style={{display:'flex', alignItems:'center', gap: 24, marginBottom: 16}}>
+        <div style={{width:90, height:90, borderRadius:'50%', background:'linear-gradient(135deg,#7f5af0,#2cb67d)', padding:3, flexShrink:0}}>
+          <div style={{width:'100%', height:'100%', borderRadius:'50%', background:'#0e0e1a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:34, fontWeight:700, color:'#7f5af0', textTransform:'uppercase'}}>
+            {profile.username?.[0]}
           </div>
         </div>
+        <div style={{display:'flex', gap:20, flex:1, justifyContent:'space-around'}}>
+          {[
+            { val: profile.posts_count || posts.length || 0, label: 'publicaciones' },
+            { val: profile.followers_count || 0, label: 'seguidores' },
+            { val: profile.following_count || 0, label: 'siguiendo' },
+          ].map(({ val, label }) => (
+            <div key={label} style={{textAlign:'center'}}>
+              <div style={{fontWeight:700, fontSize:20, color:'#e2e8f0'}}>{val}</div>
+              <div style={{fontSize:12, color:'#64748b', marginTop:2}}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bio */}
+      <div style={{marginBottom: 16}}>
+        <div style={{fontWeight:600, fontSize:15}}>{profile.username}</div>
+        {profile.thought_level && <div style={{fontSize:12, color:'#7f5af0', marginTop:2}}>Nivel: {profile.thought_level}</div>}
+        {profile.bio && <div style={{fontSize:14, color:'#cbd5e1', marginTop:4, lineHeight:1.5}}>{profile.bio}</div>}
+        {profile.origin && <div style={{fontSize:13, color:'#64748b', marginTop:3}}>📍 {profile.origin}</div>}
+        {(profile.interests || []).length > 0 && (
+          <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:8}}>
+            {(profile.interests || []).map((tag, i) => (
+              <span key={i} style={{background:'rgba(127,90,240,0.15)', color:'#7f5af0', borderRadius:20, padding:'2px 10px', fontSize:11}}>{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      {edit ? (
+        <form onSubmit={handleEdit} style={{marginBottom: 20}}>
+          <textarea name="bio" placeholder="Biografía" value={form.bio} onChange={handleChange} rows={3}
+            style={{width:'100%', background:'#1a1a2e', border:'1px solid rgba(127,90,240,0.3)', borderRadius:10, color:'#e2e8f0', padding:'10px 12px', fontSize:14, resize:'vertical', marginBottom:8, boxSizing:'border-box'}} />
+          <input name="interests" placeholder="Intereses (separados por coma)" value={form.interests} onChange={handleChange}
+            style={{width:'100%', background:'#1a1a2e', border:'1px solid rgba(127,90,240,0.3)', borderRadius:10, color:'#e2e8f0', padding:'10px 12px', fontSize:14, marginBottom:8, boxSizing:'border-box'}} />
+          <input name="origin" placeholder="Origen" value={form.origin} onChange={handleChange}
+            style={{width:'100%', background:'#1a1a2e', border:'1px solid rgba(127,90,240,0.3)', borderRadius:10, color:'#e2e8f0', padding:'10px 12px', fontSize:14, marginBottom:12, boxSizing:'border-box'}} />
+          <div style={{display:'flex', gap:8}}>
+            <button type="submit" style={{flex:1, padding:'10px', background:'linear-gradient(135deg,#7f5af0,#2cb67d)', border:'none', borderRadius:10, color:'#fff', fontWeight:600, cursor:'pointer', fontSize:14}}>Guardar</button>
+            <button type="button" onClick={() => setEdit(false)} style={{flex:1, padding:'10px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:10, color:'#e2e8f0', cursor:'pointer', fontSize:14}}>Cancelar</button>
+          </div>
+          {error && <div style={{color:'#ff6b6b', marginTop:8, fontSize:13}}>{error}</div>}
+        </form>
+      ) : (
+        <div style={{display:'flex', gap:8, marginBottom:20}}>
+          {(() => {
+            const cur = JSON.parse(localStorage.getItem('user'));
+            const isOwn = cur?.id === profile.id;
+            if (isOwn) return (
+              <>
+                <button onClick={() => setEdit(true)} style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}>Editar perfil</button>
+                <button onClick={() => navigator.clipboard.writeText(window.location.origin + `/profile/${profile.id}`)} style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}>Compartir</button>
+                <button style={{width:42, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', cursor:'pointer', fontSize:18}}>👤</button>
+              </>
+            );
+            return (
+              <>
+                <button style={{flex:1, padding:'9px 0', background:'linear-gradient(135deg,#7f5af0,#2cb67d)', border:'none', borderRadius:10, color:'#fff', fontWeight:600, cursor:'pointer', fontSize:14}}>Seguir</button>
+                <button style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}>Mensaje</button>
+              </>
+            );
+          })()}
+        </div>
       )}
-      {error && <p style={{color:'red'}}>{error}</p>}
-      {/* Módulo de privacidad */}
-      <div style={{marginBottom: 16, border: '1px solid #eee', borderRadius: 4, padding: 8}}>
-        <h4>Privacidad</h4>
-        <label>
-          <input type="checkbox" checked={profile.account_type === 'privado'} onChange={e => handleAccountType(e.target.checked ? 'privado' : 'normal')} />
-          Cuenta privada
-        </label>
-        <div style={{fontSize: 12, color: '#888', marginTop: 4}}>
-          Si tu cuenta es privada, solo tus seguidores podrán ver tus publicaciones.
+
+      {/* Highlights row */}
+      <div style={{display:'flex', gap:16, overflowX:'auto', padding:'4px 0 16px', borderBottom:'1px solid rgba(255,255,255,0.07)', scrollbarWidth:'none', marginBottom:2}}>
+        <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0, cursor:'pointer'}}>
+          <div style={{width:64, height:64, borderRadius:'50%', border:'1.5px dashed rgba(127,90,240,0.4)', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(127,90,240,0.06)'}}>
+            <span style={{fontSize:28, color:'#7f5af0', lineHeight:1}}>+</span>
+          </div>
+          <span style={{fontSize:11, color:'#475569'}}>Nuevo</span>
         </div>
-      </div>
-      {/* Destacados interactivo */}
-      <div style={{marginBottom: 16}}>
-        <h4>Destacados</h4>
-        <button onClick={() => setDestacados(posts.slice(0, 3))}>Destacar primeros 3 posts</button>
-        <div style={{display: 'flex', gap: 8}}>
-          {destacados.map(post => (
-            <div key={post.id} style={{border: '2px solid gold', borderRadius: 8, padding: 8, minWidth: 100}}>
-              <b>{post.content}</b>
-              <div style={{fontSize: 10, color: '#888'}}>{new Date(post.created_at).toLocaleString()}</div>
+        {principios.slice(0, 5).map((p, i) => (
+          <div key={i} style={{display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0, cursor:'pointer'}}>
+            <div style={{width:64, height:64, borderRadius:'50%', background:'linear-gradient(135deg,#7f5af0,#2cb67d)', padding:2}}>
+              <div style={{width:'100%', height:'100%', borderRadius:'50%', background:'#0e0e1a', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22}}>
+                {['💡','⚡','🔥','🧠','🌍'][i]}
+              </div>
             </div>
-          ))}
-        </div>
+            <span style={{fontSize:11, color:'#94a3b8', maxWidth:64, textAlign:'center', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{p.split(' ')[0]}</span>
+          </div>
+        ))}
       </div>
-      {/* Rail (Stories) interactivo */}
-      <div style={{marginBottom: 16}}>
-        <h4>Rail (Stories)</h4>
-        <form onSubmit={e => { e.preventDefault(); setStories([...stories, { id: Date.now(), content: storyInput }]); setStoryInput(''); }}>
-          <input value={storyInput} onChange={e => setStoryInput(e.target.value)} placeholder="Nueva story" />
-          <button type="submit">Subir story</button>
-        </form>
-        <div style={{display: 'flex', gap: 8}}>
-          {stories.map(story => (
-            <div key={story.id} style={{border: '1px solid #aaa', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9f9f9'}}>
-              <span>{story.content}</span>
-            </div>
-          ))}
-        </div>
+
+      {/* Tabs */}
+      <div style={{display:'flex', borderBottom:'1px solid rgba(255,255,255,0.08)', marginBottom:3}}>
+        {[
+          { key:'ideas', icon:'⊞' },
+          { key:'debates', icon:'⚡' },
+          { key:'top', icon:'★' },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            style={{flex:1, padding:'13px 0', background:'none', border:'none', borderBottom: activeTab === tab.key ? '2px solid #7f5af0' : '2px solid transparent', color: activeTab === tab.key ? '#e2e8f0' : '#475569', cursor:'pointer', fontSize:20, transition:'color 0.2s, border-color 0.2s'}}>
+            {tab.icon}
+          </button>
+        ))}
       </div>
-      {/* Movie (Reels) interactivo */}
-      <div style={{marginBottom: 16}}>
-        <h4>Movie (Reels)</h4>
-        <form onSubmit={e => { e.preventDefault(); setReels([...reels, { id: Date.now(), title: reelInput, created_at: new Date() }]); setReelInput(''); }}>
-          <input value={reelInput} onChange={e => setReelInput(e.target.value)} placeholder="Nuevo reel" />
-          <button type="submit">Subir reel</button>
-        </form>
-        <div style={{display: 'flex', gap: 8}}>
-          {reels.map(reel => (
-            <div key={reel.id} style={{border: '1px solid #aaa', borderRadius: 8, padding: 8, minWidth: 120, background: '#f0f0ff'}}>
-              <b>{reel.title}</b>
-              <div style={{fontSize: 10, color: '#888'}}>{new Date(reel.created_at).toLocaleString()}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Mensajería real entre usuarios */}
-      <div style={{marginBottom: 16}}>
-        <h4>Mensajería directa</h4>
-        {(() => {
-          const currentUser = JSON.parse(localStorage.getItem('user'));
-          if (!currentUser || currentUser.id === profile.id) {
-            return <div style={{color:'#888'}}>Inicia sesión con otra cuenta para enviar mensajes a este usuario.</div>;
-          }
-          return <MyLinkMessages user={currentUser} peer={profile} />;
-        })()}
-      </div>
-      <div style={{marginTop: 32}}>
-        <h3>Mis publicaciones</h3>
-        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8}}>
-          {posts.map(post => (
-            <div key={post.id} style={{border: '1px solid #eee', borderRadius: 4, padding: 8, minHeight: 60}}>
-              {post.content}
-              <div style={{fontSize: 10, color: '#888'}}>{new Date(post.created_at).toLocaleString()}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+
+      {/* Content grid */}
+      {(() => {
+        const items = activeTab === 'ideas' ? posts : activeTab === 'debates' ? debates : ideasPotentes;
+        return (
+          <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:3}}>
+            {items.map(post => (
+              <div key={post.id} style={{aspectRatio:'1', background:'rgba(127,90,240,0.07)', border:'1px solid rgba(127,90,240,0.1)', borderRadius:4, padding:'10px 8px', display:'flex', flexDirection:'column', justifyContent:'space-between', cursor:'pointer', overflow:'hidden'}}>
+                <div style={{fontSize:11, color:'#cbd5e1', overflow:'hidden', display:'-webkit-box', WebkitLineClamp:4, WebkitBoxOrient:'vertical', lineHeight:1.4}}>
+                  {post.premise || post.content || post.title || '—'}
+                </div>
+                <div style={{display:'flex', gap:6, fontSize:10, color:'#64748b', marginTop:4}}>
+                  <span>🔥{post.ignite_count||0}</span>
+                  <span>⚡{post.challenge_count||0}</span>
+                </div>
+              </div>
+            ))}
+            {items.length === 0 && (
+              <div style={{gridColumn:'1/-1', textAlign:'center', padding:'48px 0', color:'#334155', fontSize:14}}>
+                Nada aquí aún.
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
