@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 function Profile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const cur = JSON.parse(localStorage.getItem('user'));
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -105,7 +106,11 @@ function Profile() {
           {profile.username}
           {profile.verified && <span style={{color:'#7f5af0', marginLeft:6, fontSize:15}}>✓</span>}
         </span>
-        <span style={{fontSize: 24, color: '#475569', cursor:'pointer'}}>☰</span>
+        {cur?.id === profile.id && (
+          <button onClick={() => navigate('/settings')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 8, color: '#94a3b8', fontSize: 22, lineHeight: 1 }}>
+            ☰
+          </button>
+        )}
       </div>
 
       {/* Avatar + stats */}

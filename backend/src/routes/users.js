@@ -4,7 +4,23 @@ const pool = require('../db');
 
 // Obtener publicaciones (ideas) de un usuario
 router.get('/:id/posts', async (req, res) => {
+  const viewerId = req.query.viewer_id;
   try {
+    // Check if account is private
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE');
+    const privRes = await pool.query('SELECT is_private FROM users WHERE id = $1', [req.params.id]);
+    if (privRes.rows.length > 0 && privRes.rows[0].is_private) {
+      // Check if viewer follows this account
+      if (!viewerId || String(viewerId) === String(req.params.id)) {
+        // Owner can always see their own posts
+        if (!viewerId || String(viewerId) !== String(req.params.id)) {
+          return res.json([]);
+        }
+      } else {
+        const followRes = await pool.query('SELECT 1 FROM followers WHERE follower_id = $1 AND user_id = $2', [viewerId, req.params.id]);
+        if (followRes.rows.length === 0) return res.json([]);
+      }
+    }
     const postsRes = await pool.query(
       'SELECT id, premise, argument, evidence, conclusion, counterargument, media_url, ignite_count, expand_count, challenge_count, created_at FROM ideas WHERE author_id = $1 ORDER BY created_at DESC',
       [req.params.id]
@@ -18,7 +34,7 @@ router.get('/:id/posts', async (req, res) => {
 // Obtener perfil de usuario con contadores
 router.get('/:id', async (req, res) => {
   try {
-    const userRes = await pool.query('SELECT id, username, email, bio, interests, principios, age, origin, account_type, verified, thought_level, created_at FROM users WHERE id = $1', [req.params.id]);
+    const userRes = await pool.query('SELECT id, username, email, bio, interests, principios, age, origin, account_type, verified, is_private, thought_level, created_at FROM users WHERE id = $1', [req.params.id]);
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -103,6 +119,69 @@ router.get('/', async (req, res) => {
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Error al listar usuarios' });
+  }
+});
+
+// Toggle account privacy (public / private)
+router.patch('/:id/privacy', async (req, res) => {
+  const { is_private } = req.body;
+  try {
+    // Auto-create column if missing (first call)
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE');
+    const result = await pool.query(
+      'UPDATE users SET is_private = $1 WHERE id = $2 RETURNING id, is_private',
+      [!!is_private, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar privacidad' });
+  }
+});
+
+// Get account settings (privacy + preferences)
+router.get('/:id/settings', async (req, res) => {
+  try {
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT FALSE');
+    const result = await pool.query('SELECT id, is_private FROM users WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener ajustes' });
+  }
+});
+
+// Change password
+router.patch('/:id/password', async (req, res) => {
+  const bcrypt = require('bcryptjs');
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password) return res.status(400).json({ error: 'Faltan datos' });
+  if (new_password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  try {
+    const result = await pool.query('SELECT id, password FROM users WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const user = result.rows[0];
+    const valid = await bcrypt.compare(current_password, user.password);
+    if (!valid) return res.status(401).json({ error: 'Contraseña actual incorrecta' });
+    const hashed = await bcrypt.hash(new_password, 10);
+    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashed, req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al cambiar contraseña' });
+  }
+});
+
+// Update account_type (normal / creator / business)
+router.patch('/:id/account-type', async (req, res) => {
+  const { account_type } = req.body;
+  const valid = ['normal', 'creator', 'business'];
+  if (!valid.includes(account_type)) return res.status(400).json({ error: 'Tipo invalido' });
+  try {
+    const result = await pool.query('UPDATE users SET account_type = $1 WHERE id = $2 RETURNING id, account_type', [account_type, req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar tipo' });
   }
 });
 

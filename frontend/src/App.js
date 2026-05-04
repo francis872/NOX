@@ -46,6 +46,20 @@ import Admin from './pages/Admin';
 import Loop from './pages/Loop';
 import Camera from './pages/Camera';
 import Onboarding from './components/Onboarding';
+import Settings from './pages/Settings';
+import PrivacidadCuenta from './pages/PrivacidadCuenta';
+import CambiarContrasena from './pages/CambiarContrasena';
+import DatosPersonales from './pages/DatosPersonales';
+import CuentasRestringidas from './pages/CuentasRestringidas';
+import Verificacion from './pages/Verificacion';
+import CentroFamilias from './pages/CentroFamilias';
+import Archivo from './pages/Archivo';
+import EstadoCuenta from './pages/EstadoCuenta';
+import Informacion from './pages/Informacion';
+import ExperienciasConectadas from './pages/ExperienciasConectadas';
+import PreferenciasAnuncios from './pages/PreferenciasAnuncios';
+import ArchivosDescargas from './pages/ArchivosDescargas';
+import PedidosPagos from './pages/PedidosPagos';
 import './darklab.css';
 
 export default function App() {
@@ -110,6 +124,20 @@ export default function App() {
           <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" />} />
           <Route path="/loop" element={user ? <Loop /> : <Navigate to="/login" />} />
           <Route path="/camara" element={user ? <Camera /> : <Navigate to="/login" />} />
+          <Route path="/settings" element={user ? <Settings /> : <Navigate to="/login" />} />
+          <Route path="/settings/privacidad-cuenta" element={user ? <PrivacidadCuenta /> : <Navigate to="/login" />} />
+          <Route path="/settings/contrasena" element={user ? <CambiarContrasena /> : <Navigate to="/login" />} />
+          <Route path="/settings/datos-personales" element={user ? <DatosPersonales /> : <Navigate to="/login" />} />
+          <Route path="/settings/restringidas" element={user ? <CuentasRestringidas /> : <Navigate to="/login" />} />
+          <Route path="/settings/verificacion" element={user ? <Verificacion /> : <Navigate to="/login" />} />
+          <Route path="/settings/centro-familias" element={user ? <CentroFamilias /> : <Navigate to="/login" />} />
+          <Route path="/settings/archivo" element={user ? <Archivo /> : <Navigate to="/login" />} />
+          <Route path="/settings/estado-cuenta" element={user ? <EstadoCuenta /> : <Navigate to="/login" />} />
+          <Route path="/settings/informacion" element={user ? <Informacion /> : <Navigate to="/login" />} />
+          <Route path="/settings/experiencias" element={user ? <ExperienciasConectadas /> : <Navigate to="/login" />} />
+          <Route path="/settings/anuncios" element={user ? <PreferenciasAnuncios /> : <Navigate to="/login" />} />
+          <Route path="/settings/archivos" element={user ? <ArchivosDescargas /> : <Navigate to="/login" />} />
+          <Route path="/settings/pedidos" element={user ? <PedidosPagos /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
     </ErrorBoundary>
