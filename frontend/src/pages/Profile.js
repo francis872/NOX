@@ -1,22 +1,7 @@
-{/* Módulo de privacidad */}
-      <div style={{marginBottom: 16, border: '1px solid #eee', borderRadius: 4, padding: 8}}>
-        <h4>Privacidad</h4>
-        <label>
-          <input type="checkbox" checked={profile.account_type === 'privado'} onChange={e => handleAccountType(e.target.checked ? 'privado' : 'normal')} />
-          Cuenta privada
-        </label>
-        <div style={{fontSize: 12, color: '#888', marginTop: 4}}>
-          Si tu cuenta es privada, solo tus seguidores podrán ver tus publicaciones.
-        </div>
-      </div>
 import React, { useEffect, useState } from 'react';
 import MyLinkMessages from '../components/DirectMessages';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import Destacados from '../components/Destacados';
-import Rail from '../components/Rail';
-import Movie from '../components/Movie';
-import DropTail from '../components/DropTail';
 
 function Profile() {
   const { id } = useParams();
@@ -237,6 +222,17 @@ function Profile() {
         </div>
       )}
       {error && <p style={{color:'red'}}>{error}</p>}
+      {/* Módulo de privacidad */}
+      <div style={{marginBottom: 16, border: '1px solid #eee', borderRadius: 4, padding: 8}}>
+        <h4>Privacidad</h4>
+        <label>
+          <input type="checkbox" checked={profile.account_type === 'privado'} onChange={e => handleAccountType(e.target.checked ? 'privado' : 'normal')} />
+          Cuenta privada
+        </label>
+        <div style={{fontSize: 12, color: '#888', marginTop: 4}}>
+          Si tu cuenta es privada, solo tus seguidores podrán ver tus publicaciones.
+        </div>
+      </div>
       {/* Destacados interactivo */}
       <div style={{marginBottom: 16}}>
         <h4>Destacados</h4>
