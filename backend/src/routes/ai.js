@@ -1,15 +1,16 @@
-// ai.js - Endpoints para IA (moderación, sugerencias, coaching)
+// ai.js - Endpoints para IA (moderación, sugerencias) — OpenAI v6
 const express = require('express');
 const router = express.Router();
-const { Configuration, OpenAIApi } = require('openai');
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+const OpenAI = require('openai');
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Moderar texto
 router.post('/moderate', async (req, res) => {
   try {
     const { text } = req.body;
-    const response = await openai.createModeration({ input: text });
-    res.json(response.data);
+    const response = await openai.moderations.create({ input: text });
+    res.json(response);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -19,12 +20,12 @@ router.post('/moderate', async (req, res) => {
 router.post('/suggest', async (req, res) => {
   try {
     const { prompt } = req.body;
-    const response = await openai.createCompletion({
-      model: 'text-davinci-003',
-      prompt,
-      max_tokens: 80
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 120
     });
-    res.json({ suggestion: response.data.choices[0].text });
+    res.json({ suggestion: response.choices[0].message.content });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

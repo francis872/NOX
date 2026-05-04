@@ -1,13 +1,13 @@
 // explore.js - Endpoint para explorar usuarios
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models');
+const pool = require('../db');
 
-// Explorar usuarios (búsqueda simple)
+// Explorar usuarios
 router.get('/', async (req, res) => {
   try {
-    const users = await User.findAll({ attributes: ['id', 'username', 'bio', 'thought_level'] });
-    res.json(users);
+    const result = await pool.query('SELECT id, username, bio, thought_level FROM users ORDER BY username ASC');
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

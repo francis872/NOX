@@ -1,3 +1,7 @@
+const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+
 // Obtener publicaciones de un usuario
 router.get('/:id/posts', async (req, res) => {
   try {
@@ -7,11 +11,6 @@ router.get('/:id/posts', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener publicaciones' });
   }
 });
-const express = require('express');
-const router = express.Router();
-
-
-const pool = require('../db');
 
 // Obtener perfil de usuario con contadores
 router.get('/:id', async (req, res) => {
