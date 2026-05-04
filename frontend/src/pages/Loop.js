@@ -1,5 +1,6 @@
 // Loop.js — Vertical idea feed (like Reels but for thoughts)
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const MOCK = [
@@ -133,6 +134,7 @@ export default function Loop() {
   const [loops, setLoops] = useState([]);
   const [current, setCurrent] = useState(0);
   const containerRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios.get('/api/ideas')
@@ -159,12 +161,16 @@ export default function Loop() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '14px 16px 8px',
         background: 'linear-gradient(180deg, rgba(10,10,20,0.85) 0%, transparent 100%)',
-        pointerEvents: 'none',
       }}>
+        {/* Back button */}
+        <button onClick={() => navigate(-1)} style={{ position:'absolute', left:70, top:12, background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:20, padding:'6px 14px', color:'#94a3b8', fontSize:13, fontWeight:600, cursor:'pointer', pointerEvents:'auto' }}>
+          ← Volver
+        </button>
         <span style={{
           fontSize: 26, fontWeight: 900, letterSpacing: '3px',
           background: 'linear-gradient(135deg,#7f5af0,#2cb67d)',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          pointerEvents: 'none',
         }}>LOOP</span>
       </div>
 

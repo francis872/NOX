@@ -11,7 +11,7 @@ const GRADIENT_BG = [
 ];
 
 /* ─── Full-screen viewer ────────────────────────── */
-function VibeViewer({ vibe, onClose }) {
+function VibeViewer({ vibe, onClose, onDelete, currentUser }) {
   const isImage = vibe.media_type === 'image' && vibe.media_data;
   const isVideo = vibe.media_type === 'video' && vibe.media_data;
 
@@ -25,6 +25,9 @@ function VibeViewer({ vibe, onClose }) {
       }}
     >
       <button onClick={onClose} style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', zIndex: 1 }}>✕</button>
+      {currentUser && vibe.author_id === currentUser.id && (
+        <button onClick={e => { e.stopPropagation(); onDelete(vibe.id); }} style={{ position: 'absolute', top: 18, left: 18, background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, padding: '6px 12px', cursor: 'pointer', zIndex: 1 }}>🗑 Eliminar</button>
+      )}
 
       {/* Progress bar */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.2)' }}>
@@ -203,6 +206,14 @@ export default function Vibes({ user }) {
     setVibes(prev => [{ ...vibe, username: user.username }, ...prev]);
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/api/vibes/${id}`);
+      setVibes(prev => prev.filter(v => v.id !== id));
+      setViewing(null);
+    } catch {}
+  };
+
   // Group: own vibe first, then others (unique authors)
   const seen = new Set();
   const ordered = [
@@ -255,7 +266,7 @@ export default function Vibes({ user }) {
         )}
       </div>
 
-      {viewing && <VibeViewer vibe={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <VibeViewer vibe={viewing} onClose={() => setViewing(null)} onDelete={handleDelete} currentUser={user} />}
       {showCreate && <CreateVibeModal user={user} onClose={() => setShowCreate(false)} onCreated={onCreated} />}
     </>
   );

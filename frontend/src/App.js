@@ -45,12 +45,16 @@ import CentroPrivacidad from './pages/CentroPrivacidad';
 import Admin from './pages/Admin';
 import Loop from './pages/Loop';
 import Camera from './pages/Camera';
+import Onboarding from './components/Onboarding';
 import './darklab.css';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+  });
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return user && !localStorage.getItem('nox_onboarded');
   });
 
   useEffect(() => {
@@ -69,8 +73,14 @@ export default function App() {
 
   if (loading) return <Loader />;
 
+  const handleOnboardingDone = () => {
+    localStorage.setItem('nox_onboarded', '1');
+    setShowOnboarding(false);
+  };
+
   return (
     <ErrorBoundary>
+      {showOnboarding && <Onboarding onDone={handleOnboardingDone} />}
       <Router>
         {user && <Navbar />}
         <Routes>

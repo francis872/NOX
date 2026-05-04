@@ -1,13 +1,13 @@
-﻿// Camera.js â€” PÃ¡gina dedicada de cÃ¡mara (Foto / Video / Boomerang / GalerÃ­a)
+// Camera.js — Página dedicada de cámara (Foto / Video / Boomerang / Galería)
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const MODES = [
-  { id: 'photo',     label: 'ðŸ“¸ Foto' },
-  { id: 'video',     label: 'ðŸŽ¬ Video' },
-  { id: 'boomerang', label: 'ðŸ” Boomerang' },
-  { id: 'gallery',   label: 'ðŸ“ GalerÃ­a' },
+  { id: 'photo',     label: '📸 Foto' },
+  { id: 'video',     label: '🎬 Video' },
+  { id: 'boomerang', label: '🔁 Boomerang' },
+  { id: 'gallery',   label: '📁 Galería' },
 ];
 
 export default function Camera() {
@@ -35,7 +35,7 @@ export default function Camera() {
   const [recSecs,      setRecSecs]      = useState(0);
   const [boomeranging, setBoomeranging] = useState(false);
 
-  // â”€â”€ Camera stream â”€â”€
+  // ── Camera stream ──
   const startCamera = useCallback(async (facingMode) => {
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     try {
@@ -45,7 +45,7 @@ export default function Camera() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraErr('');
     } catch {
-      setCameraErr('No se pudo acceder a la cÃ¡mara. Verifica los permisos del navegador.');
+      setCameraErr('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
     }
   }, [mode]);
 
@@ -69,7 +69,7 @@ export default function Camera() {
     setCameraErr(''); setRecording(false); setRecSecs(0);
   };
 
-  // â”€â”€ PHOTO â”€â”€
+  // ── PHOTO ──
   const capturePhoto = () => {
     const video = videoRef.current; const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -81,7 +81,7 @@ export default function Camera() {
     streamRef.current?.getTracks().forEach(t => t.stop());
   };
 
-  // â”€â”€ VIDEO â”€â”€
+  // ── VIDEO ──
   const startVideo = () => {
     if (!streamRef.current) return;
     const chunks = [];
@@ -101,7 +101,7 @@ export default function Camera() {
       mr.start(200); setRecording(true); setRecSecs(0);
       recordTickRef.current = setInterval(() => setRecSecs(s => s + 1), 1000);
       recordTimerRef.current = setTimeout(stopVideo, 15000);
-    } catch { setCameraErr('Tu navegador no soporta grabaciÃ³n de video.'); }
+    } catch { setCameraErr('Tu navegador no soporta grabación de video.'); }
   };
 
   const stopVideo = () => {
@@ -109,7 +109,7 @@ export default function Camera() {
     if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
   };
 
-  // â”€â”€ BOOMERANG â”€â”€
+  // ── BOOMERANG ──
   const captureBoomerang = () => {
     const video = videoRef.current; const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -164,10 +164,10 @@ export default function Camera() {
     }
   };
 
-  // â”€â”€ GALLERY â”€â”€
+  // ── GALLERY ──
   const handleGalleryFile = e => {
     const file = e.target.files[0]; if (!file) return;
-    if (file.size > 9 * 1024 * 1024) { setCameraErr('Archivo muy grande (mÃ¡x 9 MB)'); return; }
+    if (file.size > 9 * 1024 * 1024) { setCameraErr('Archivo muy grande (máx 9 MB)'); return; }
     const reader = new FileReader();
     reader.onload = () => { setSnapshot(reader.result); setSnapType(file.type.startsWith('video') ? 'video' : 'image'); setCameraErr(''); };
     reader.readAsDataURL(file);
@@ -179,7 +179,7 @@ export default function Camera() {
     if (mode !== 'gallery') startCamera(facing);
   };
 
-  // â”€â”€ POST â”€â”€
+  // ── POST ──
   const postAsVibe = async () => {
     setPosting(true); setPostTarget('vibe');
     try {
@@ -207,10 +207,10 @@ export default function Camera() {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 22, cursor: 'pointer', padding: 0 }}>â†</button>
-          <span style={{ color: '#e2e8f0', fontSize: 18, fontWeight: 700 }}>ðŸ“¸ CÃ¡mara NOX</span>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 22, cursor: 'pointer', padding: 0 }}>←</button>
+          <span style={{ color: '#e2e8f0', fontSize: 18, fontWeight: 700 }}>📸 Cámara NOX</span>
           {!snapshot && mode !== 'gallery'
-            ? <button onClick={flipCamera} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 20, padding: '7px 14px', color: '#e2e8f0', cursor: 'pointer', fontSize: 13 }}>ðŸ”„ Voltear</button>
+            ? <button onClick={flipCamera} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 20, padding: '7px 14px', color: '#e2e8f0', cursor: 'pointer', fontSize: 13 }}>🔄 Voltear</button>
             : <div style={{ width: 76 }} />}
         </div>
 
@@ -239,9 +239,9 @@ export default function Camera() {
           {mode === 'gallery' && !snapshot && (
             <div onClick={() => fileInputRef.current?.click()}
               style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer' }}>
-              <span style={{ fontSize: 54 }}>ðŸ“</span>
+              <span style={{ fontSize: 54 }}>📁</span>
               <span style={{ color: '#94a3b8', fontSize: 14 }}>Toca para elegir foto o video</span>
-              <span style={{ color: '#475569', fontSize: 11 }}>MÃ¡x 9 MB</span>
+              <span style={{ color: '#475569', fontSize: 11 }}>Máx 9 MB</span>
             </div>
           )}
 
@@ -260,29 +260,29 @@ export default function Camera() {
           {recording && (
             <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(220,38,38,0.85)', borderRadius: 20, padding: '4px 12px' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />
-              <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>â— REC {recSecs}s / 15s</span>
+              <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>● REC {recSecs}s / 15s</span>
             </div>
           )}
 
           {/* Boomerang overlay */}
           {boomeranging && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>ðŸ” Capturando loop...</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>🔁 Capturando loop...</span>
             </div>
           )}
 
           {/* Boomerang watermark */}
           {snapshot && mode === 'boomerang' && snapType === 'video' && (
             <div style={{ position: 'absolute', bottom: 10, right: 12, background: 'rgba(0,0,0,0.55)', borderRadius: 20, padding: '3px 10px', color: '#fff', fontSize: 11, fontWeight: 700 }}>
-              ðŸ” BOOMERANG
+              🔁 BOOMERANG
             </div>
           )}
 
           {/* Success overlay */}
           {posted && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(44,182,125,0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <span style={{ fontSize: 52 }}>âœ“</span>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{postTarget === 'vibe' ? 'Â¡Vibe publicado!' : 'âœ“ Listo'}</span>
+              <span style={{ fontSize: 52 }}>✓</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{postTarget === 'vibe' ? '¡Vibe publicado!' : '✓ Listo'}</span>
             </div>
           )}
         </div>
@@ -306,7 +306,7 @@ export default function Camera() {
                 onMouseUp={e   => e.currentTarget.style.transform = 'scale(1)'} />
             )}
             {mode === 'video' && !recording && (
-              <button onClick={startVideo} title="Iniciar grabaciÃ³n"
+              <button onClick={startVideo} title="Iniciar grabación"
                 style={{ width: 78, height: 78, borderRadius: '50%', background: '#ef4444', border: '6px solid rgba(239,68,68,0.4)', cursor: 'pointer', boxShadow: '0 0 24px rgba(239,68,68,0.5)', transition: 'transform 0.1s' }}
                 onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
                 onMouseUp={e   => e.currentTarget.style.transform = 'scale(1)'} />
@@ -322,13 +322,13 @@ export default function Camera() {
                 style={{ width: 78, height: 78, borderRadius: '50%', background: boomeranging ? '#475569' : 'linear-gradient(135deg,#7f5af0,#f72585)', border: '6px solid rgba(127,90,240,0.4)', cursor: boomeranging ? 'not-allowed' : 'pointer', boxShadow: '0 0 24px rgba(127,90,240,0.4)', fontSize: 28, transition: 'transform 0.1s' }}
                 onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
                 onMouseUp={e   => e.currentTarget.style.transform = 'scale(1)'}>
-                ðŸ”
+                🔁
               </button>
             )}
             {mode === 'gallery' && (
               <button onClick={() => fileInputRef.current?.click()}
                 style={{ padding: '16px 38px', background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', border: 'none', borderRadius: 16, color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-                ðŸ“ Elegir archivo
+                📁 Elegir archivo
               </button>
             )}
           </div>
@@ -337,10 +337,10 @@ export default function Camera() {
         {/* Mode tip */}
         {!snapshot && (
           <p style={{ textAlign: 'center', color: '#334155', fontSize: 11, marginTop: 6, marginBottom: 16 }}>
-            {mode === 'photo'     && 'Toca el cÃ­rculo para capturar una foto'}
-            {mode === 'video'     && (recording ? `Toca el cuadrado para detener Â· ${15 - recSecs}s restantes` : 'Toca el cÃ­rculo rojo para grabar (mÃ¡x 15 s)')}
-            {mode === 'boomerang' && 'Toca ðŸ” â€” captura ~1 s de frames y los une en un loop forwardÂ·backward'}
-            {mode === 'gallery'   && 'Elige una foto o video desde tu dispositivo (mÃ¡x 9 MB)'}
+            {mode === 'photo'     && 'Toca el círculo para capturar una foto'}
+            {mode === 'video'     && (recording ? `Toca el cuadrado para detener · ${15 - recSecs}s restantes` : 'Toca el círculo rojo para grabar (máx 15 s)')}
+            {mode === 'boomerang' && 'Toca 🔁 — captura ~1 s de frames y los une en un loop forward·backward'}
+            {mode === 'gallery'   && 'Elige una foto o video desde tu dispositivo (máx 9 MB)'}
           </p>
         )}
 
@@ -350,14 +350,14 @@ export default function Camera() {
             <input value={caption} onChange={e => setCaption(e.target.value)} placeholder="Agrega un caption (opcional)..."
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '11px 14px', color: '#e2e8f0', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
             <div style={{ display: 'flex', gap: 10 }}>
-              {actionBtn(postAsVibe, posting ? 'â³ Publicando...' : 'âœ¨ Subir como Vibe',
+              {actionBtn(postAsVibe, posting ? '⏳ Publicando...' : '✨ Subir como Vibe',
                 { background: posting ? '#334155' : 'linear-gradient(135deg,#f72585,#7f5af0)', cursor: posting ? 'not-allowed' : 'pointer' })}
-              {actionBtn(attachToIdea, 'ðŸ’¡ Adjuntar a Idea',
+              {actionBtn(attachToIdea, '💡 Adjuntar a Idea',
                 { background: 'linear-gradient(135deg,#7f5af0,#2cb67d)' })}
             </div>
             <button onClick={retake}
               style={{ padding: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: '#94a3b8', cursor: 'pointer', fontSize: 13 }}>
-              â†© {mode === 'video' ? 'Grabar de nuevo' : mode === 'boomerang' ? 'Nuevo boomerang' : mode === 'gallery' ? 'Elegir otro' : 'Retomar foto'}
+              ↩ {mode === 'video' ? 'Grabar de nuevo' : mode === 'boomerang' ? 'Nuevo boomerang' : mode === 'gallery' ? 'Elegir otro' : 'Retomar foto'}
             </button>
           </div>
         )}
