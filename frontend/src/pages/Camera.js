@@ -1,13 +1,13 @@
-// Camera.js — Página dedicada de cámara (Foto / Video / Boomerang / Galería)
+﻿// Camera.js â€” PÃ¡gina dedicada de cÃ¡mara (Foto / Video / Boomerang / GalerÃ­a)
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const MODES = [
-  { id: 'photo',     label: '📸 Foto' },
-  { id: 'video',     label: '🎬 Video' },
-  { id: 'boomerang', label: '🔁 Boomerang' },
-  { id: 'gallery',   label: '📁 Galería' },
+  { id: 'photo',     label: 'ðŸ“¸ Foto' },
+  { id: 'video',     label: 'ðŸŽ¬ Video' },
+  { id: 'boomerang', label: 'ðŸ” Boomerang' },
+  { id: 'gallery',   label: 'ðŸ“ GalerÃ­a' },
 ];
 
 export default function Camera() {
@@ -35,7 +35,7 @@ export default function Camera() {
   const [recSecs,      setRecSecs]      = useState(0);
   const [boomeranging, setBoomeranging] = useState(false);
 
-  // ── Camera stream ──
+  // â”€â”€ Camera stream â”€â”€
   const startCamera = useCallback(async (facingMode) => {
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     try {
@@ -45,7 +45,7 @@ export default function Camera() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraErr('');
     } catch {
-      setCameraErr('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
+      setCameraErr('No se pudo acceder a la cÃ¡mara. Verifica los permisos del navegador.');
     }
   }, [mode]);
 
@@ -69,7 +69,7 @@ export default function Camera() {
     setCameraErr(''); setRecording(false); setRecSecs(0);
   };
 
-  // ── PHOTO ──
+  // â”€â”€ PHOTO â”€â”€
   const capturePhoto = () => {
     const video = videoRef.current; const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -81,7 +81,7 @@ export default function Camera() {
     streamRef.current?.getTracks().forEach(t => t.stop());
   };
 
-  // ── VIDEO ──
+  // â”€â”€ VIDEO â”€â”€
   const startVideo = () => {
     if (!streamRef.current) return;
     const chunks = [];
@@ -101,7 +101,7 @@ export default function Camera() {
       mr.start(200); setRecording(true); setRecSecs(0);
       recordTickRef.current = setInterval(() => setRecSecs(s => s + 1), 1000);
       recordTimerRef.current = setTimeout(stopVideo, 15000);
-    } catch { setCameraErr('Tu navegador no soporta grabación de video.'); }
+    } catch { setCameraErr('Tu navegador no soporta grabaciÃ³n de video.'); }
   };
 
   const stopVideo = () => {
@@ -109,7 +109,7 @@ export default function Camera() {
     if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
   };
 
-  // ── BOOMERANG ──
+  // â”€â”€ BOOMERANG â”€â”€
   const captureBoomerang = () => {
     const video = videoRef.current; const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -164,10 +164,10 @@ export default function Camera() {
     }
   };
 
-  // ── GALLERY ──
+  // â”€â”€ GALLERY â”€â”€
   const handleGalleryFile = e => {
     const file = e.target.files[0]; if (!file) return;
-    if (file.size > 9 * 1024 * 1024) { setCameraErr('Archivo muy grande (máx 9 MB)'); return; }
+    if (file.size > 9 * 1024 * 1024) { setCameraErr('Archivo muy grande (mÃ¡x 9 MB)'); return; }
     const reader = new FileReader();
     reader.onload = () => { setSnapshot(reader.result); setSnapType(file.type.startsWith('video') ? 'video' : 'image'); setCameraErr(''); };
     reader.readAsDataURL(file);
@@ -179,7 +179,7 @@ export default function Camera() {
     if (mode !== 'gallery') startCamera(facing);
   };
 
-  // ── POST ──
+  // â”€â”€ POST â”€â”€
   const postAsVibe = async () => {
     setPosting(true); setPostTarget('vibe');
     try {
@@ -207,10 +207,10 @@ export default function Camera() {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 22, cursor: 'pointer', padding: 0 }}>←</button>
-          <span style={{ color: '#e2e8f0', fontSize: 18, fontWeight: 700 }}>📸 Cámara NOX</span>
+          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 22, cursor: 'pointer', padding: 0 }}>â†</button>
+          <span style={{ color: '#e2e8f0', fontSize: 18, fontWeight: 700 }}>ðŸ“¸ CÃ¡mara NOX</span>
           {!snapshot && mode !== 'gallery'
-            ? <button onClick={flipCamera} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 20, padding: '7px 14px', color: '#e2e8f0', cursor: 'pointer', fontSize: 13 }}>🔄 Voltear</button>
+            ? <button onClick={flipCamera} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 20, padding: '7px 14px', color: '#e2e8f0', cursor: 'pointer', fontSize: 13 }}>ðŸ”„ Voltear</button>
             : <div style={{ width: 76 }} />}
         </div>
 
@@ -239,9 +239,9 @@ export default function Camera() {
           {mode === 'gallery' && !snapshot && (
             <div onClick={() => fileInputRef.current?.click()}
               style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer' }}>
-              <span style={{ fontSize: 54 }}>📁</span>
+              <span style={{ fontSize: 54 }}>ðŸ“</span>
               <span style={{ color: '#94a3b8', fontSize: 14 }}>Toca para elegir foto o video</span>
-              <span style={{ color: '#475569', fontSize: 11 }}>Máx 9 MB</span>
+              <span style={{ color: '#475569', fontSize: 11 }}>MÃ¡x 9 MB</span>
             </div>
           )}
 
@@ -260,29 +260,29 @@ export default function Camera() {
           {recording && (
             <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(220,38,38,0.85)', borderRadius: 20, padding: '4px 12px' }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff' }} />
-              <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>● REC {recSecs}s / 15s</span>
+              <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>â— REC {recSecs}s / 15s</span>
             </div>
           )}
 
           {/* Boomerang overlay */}
           {boomeranging && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>🔁 Capturando loop...</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 18 }}>ðŸ” Capturando loop...</span>
             </div>
           )}
 
           {/* Boomerang watermark */}
           {snapshot && mode === 'boomerang' && snapType === 'video' && (
             <div style={{ position: 'absolute', bottom: 10, right: 12, background: 'rgba(0,0,0,0.55)', borderRadius: 20, padding: '3px 10px', color: '#fff', fontSize: 11, fontWeight: 700 }}>
-              🔁 BOOMERANG
+              ðŸ” BOOMERANG
             </div>
           )}
 
           {/* Success overlay */}
           {posted && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(44,182,125,0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <span style={{ fontSize: 52 }}>✓</span>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{postTarget === 'vibe' ? '¡Vibe publicado!' : '✓ Listo'}</span>
+              <span style={{ fontSize: 52 }}>âœ“</span>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{postTarget === 'vibe' ? 'Â¡Vibe publicado!' : 'âœ“ Listo'}</span>
             </div>
           )}
         </div>
@@ -306,7 +306,7 @@ export default function Camera() {
                 onMouseUp={e   => e.currentTarget.style.transform = 'scale(1)'} />
             )}
             {mode === 'video' && !recording && (
-              <button onClick={startVideo} title="Iniciar grabación"
+              <button onClick={startVideo} title="Iniciar grabaciÃ³n"
                 style={{ width: 78, height: 78, borderRadius: '50%', background: '#ef4444', border: '6px solid rgba(239,68,68,0.4)', cursor: 'pointer', boxShadow: '0 0 24px rgba(239,68,68,0.5)', transition: 'transform 0.1s' }}
                 onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
                 onMouseUp={e   => e.currentTarget.style.transform = 'scale(1)'} />
@@ -322,13 +322,13 @@ export default function Camera() {
                 style={{ width: 78, height: 78, borderRadius: '50%', background: boomeranging ? '#475569' : 'linear-gradient(135deg,#7f5af0,#f72585)', border: '6px solid rgba(127,90,240,0.4)', cursor: boomeranging ? 'not-allowed' : 'pointer', boxShadow: '0 0 24px rgba(127,90,240,0.4)', fontSize: 28, transition: 'transform 0.1s' }}
                 onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
                 onMouseUp={e   => e.currentTarget.style.transform = 'scale(1)'}>
-                🔁
+                ðŸ”
               </button>
             )}
             {mode === 'gallery' && (
               <button onClick={() => fileInputRef.current?.click()}
                 style={{ padding: '16px 38px', background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', border: 'none', borderRadius: 16, color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-                📁 Elegir archivo
+                ðŸ“ Elegir archivo
               </button>
             )}
           </div>
@@ -337,10 +337,10 @@ export default function Camera() {
         {/* Mode tip */}
         {!snapshot && (
           <p style={{ textAlign: 'center', color: '#334155', fontSize: 11, marginTop: 6, marginBottom: 16 }}>
-            {mode === 'photo'     && 'Toca el círculo para capturar una foto'}
-            {mode === 'video'     && (recording ? `Toca el cuadrado para detener · ${15 - recSecs}s restantes` : 'Toca el círculo rojo para grabar (máx 15 s)')}
-            {mode === 'boomerang' && 'Toca 🔁 — captura ~1 s de frames y los une en un loop forward·backward'}
-            {mode === 'gallery'   && 'Elige una foto o video desde tu dispositivo (máx 9 MB)'}
+            {mode === 'photo'     && 'Toca el cÃ­rculo para capturar una foto'}
+            {mode === 'video'     && (recording ? `Toca el cuadrado para detener Â· ${15 - recSecs}s restantes` : 'Toca el cÃ­rculo rojo para grabar (mÃ¡x 15 s)')}
+            {mode === 'boomerang' && 'Toca ðŸ” â€” captura ~1 s de frames y los une en un loop forwardÂ·backward'}
+            {mode === 'gallery'   && 'Elige una foto o video desde tu dispositivo (mÃ¡x 9 MB)'}
           </p>
         )}
 
@@ -350,14 +350,14 @@ export default function Camera() {
             <input value={caption} onChange={e => setCaption(e.target.value)} placeholder="Agrega un caption (opcional)..."
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '11px 14px', color: '#e2e8f0', fontSize: 14, outline: 'none', fontFamily: 'inherit' }} />
             <div style={{ display: 'flex', gap: 10 }}>
-              {actionBtn(postAsVibe, posting ? '⏳ Publicando...' : '✨ Subir como Vibe',
+              {actionBtn(postAsVibe, posting ? 'â³ Publicando...' : 'âœ¨ Subir como Vibe',
                 { background: posting ? '#334155' : 'linear-gradient(135deg,#f72585,#7f5af0)', cursor: posting ? 'not-allowed' : 'pointer' })}
-              {actionBtn(attachToIdea, '💡 Adjuntar a Idea',
+              {actionBtn(attachToIdea, 'ðŸ’¡ Adjuntar a Idea',
                 { background: 'linear-gradient(135deg,#7f5af0,#2cb67d)' })}
             </div>
             <button onClick={retake}
               style={{ padding: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: '#94a3b8', cursor: 'pointer', fontSize: 13 }}>
-              ↩ {mode === 'video' ? 'Grabar de nuevo' : mode === 'boomerang' ? 'Nuevo boomerang' : mode === 'gallery' ? 'Elegir otro' : 'Retomar foto'}
+              â†© {mode === 'video' ? 'Grabar de nuevo' : mode === 'boomerang' ? 'Nuevo boomerang' : mode === 'gallery' ? 'Elegir otro' : 'Retomar foto'}
             </button>
           </div>
         )}
@@ -371,220 +371,3 @@ export default function Camera() {
   );
 }
 
-  const videoRef = useRef();
-  const canvasRef = useRef();
-  const streamRef = useRef();
-
-  const [snapshot, setSnapshot] = useState(null);
-  const [caption, setCaption] = useState('');
-  const [facing, setFacing] = useState('user');
-  const [cameraErr, setCameraErr] = useState('');
-  const [posting, setPosting] = useState(false);
-  const [posted, setPosted] = useState(false);
-  const [postTarget, setPostTarget] = useState(null); // 'vibe' | 'idea'
-
-  const startCamera = async (facingMode) => {
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false });
-      streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCameraErr('');
-    } catch (e) {
-      setCameraErr('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
-    }
-  };
-
-  useEffect(() => {
-    startCamera(facing);
-    return () => streamRef.current?.getTracks().forEach(t => t.stop());
-  }, []); // eslint-disable-line
-
-  const flipCamera = () => {
-    const next = facing === 'user' ? 'environment' : 'user';
-    setFacing(next);
-    startCamera(next);
-  };
-
-  const capture = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    if (facing === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.80);
-    setSnapshot(dataUrl);
-    streamRef.current?.getTracks().forEach(t => t.stop());
-  };
-
-  const retake = () => {
-    setSnapshot(null);
-    setPosted(false);
-    setCaption('');
-    setPostTarget(null);
-    startCamera(facing);
-  };
-
-  const postAsVibe = async () => {
-    setPosting(true);
-    setPostTarget('vibe');
-    try {
-      await axios.post('/api/vibes', {
-        author_id: user.id,
-        media_type: 'image',
-        media_data: snapshot,
-        caption: caption || null,
-      });
-      setPosted(true);
-      setTimeout(() => navigate('/feed'), 1400);
-    } catch (e) {
-      setCameraErr(e.response?.data?.error || 'Error al publicar Vibe');
-      setPostTarget(null);
-    } finally {
-      setPosting(false);
-    }
-  };
-
-  const attachToIdea = () => {
-    // Pass photo via router state to Feed
-    navigate('/feed', { state: { photoToAttach: snapshot } });
-  };
-
-  const btn = (onClick, children, extra = {}) => (
-    <button
-      onClick={onClick}
-      style={{
-        flex: 1, padding: '13px', border: 'none', borderRadius: 12,
-        cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 14,
-        transition: 'transform 0.15s', ...extra,
-      }}
-      onMouseOver={e => e.currentTarget.style.transform = 'scale(1.03)'}
-      onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-    >
-      {children}
-    </button>
-  );
-
-  return (
-    <div style={{
-      minHeight: '100vh', background: '#04040e',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 24, paddingLeft: 60,
-    }}>
-      <div style={{ width: '100%', maxWidth: 480, padding: '0 16px' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 22, cursor: 'pointer', padding: 0 }}>←</button>
-          <span style={{ color: '#e2e8f0', fontSize: 18, fontWeight: 700 }}>📸 Cámara NOX</span>
-          {!snapshot && (
-            <button onClick={flipCamera} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 20, padding: '7px 14px', color: '#e2e8f0', cursor: 'pointer', fontSize: 13 }}>
-              🔄 Voltear
-            </button>
-          )}
-          {snapshot && <div style={{ width: 76 }} />}
-        </div>
-
-        {/* Viewfinder */}
-        <div style={{ width: '100%', borderRadius: 20, overflow: 'hidden', background: '#000', aspectRatio: '4/3', position: 'relative', boxShadow: '0 0 40px rgba(127,90,240,0.25)' }}>
-          {!snapshot ? (
-            <video
-              ref={videoRef} autoPlay playsInline muted
-              style={{ width: '100%', height: '100%', objectFit: 'cover', transform: facing === 'user' ? 'scaleX(-1)' : 'none', display: 'block' }}
-            />
-          ) : (
-            <img src={snapshot} alt="captured" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          )}
-
-          {/* Live badge */}
-          {!snapshot && !cameraErr && (
-            <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(0,0,0,0.55)', borderRadius: 20, padding: '4px 10px' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f72585', animation: 'livePulse 1.2s ease-in-out infinite' }} />
-              <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>LIVE</span>
-            </div>
-          )}
-
-          {/* Success overlay */}
-          {posted && (
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(44,182,125,0.75)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <span style={{ fontSize: 52 }}>✓</span>
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
-                {postTarget === 'vibe' ? '¡Vibe publicado!' : '✓ Listo'}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-        {cameraErr && (
-          <div style={{ color: '#ff6b6b', fontSize: 13, marginTop: 12, textAlign: 'center', padding: '10px', background: 'rgba(255,107,107,0.08)', borderRadius: 10 }}>
-            {cameraErr}
-          </div>
-        )}
-
-        {/* Controls */}
-        {!snapshot ? (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28, marginBottom: 16 }}>
-            <button
-              onClick={capture}
-              title="Tomar foto"
-              style={{
-                width: 78, height: 78, borderRadius: '50%',
-                background: '#fff', border: '6px solid rgba(127,90,240,0.7)',
-                cursor: 'pointer', boxShadow: '0 0 24px rgba(127,90,240,0.55)',
-                transition: 'transform 0.1s',
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-            />
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 18 }}>
-            <input
-              value={caption}
-              onChange={e => setCaption(e.target.value)}
-              placeholder="Agrega un caption (opcional)..."
-              style={{
-                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 12, padding: '11px 14px', color: '#e2e8f0', fontSize: 14,
-                outline: 'none', fontFamily: 'inherit',
-              }}
-            />
-            <div style={{ display: 'flex', gap: 10 }}>
-              {btn(
-                postAsVibe,
-                posting ? '⏳ Publicando...' : '✨ Subir como Vibe',
-                { background: posting ? '#334155' : 'linear-gradient(135deg,#f72585,#7f5af0)', cursor: posting ? 'not-allowed' : 'pointer' }
-              )}
-              {btn(
-                attachToIdea,
-                '💡 Adjuntar a Idea',
-                { background: 'linear-gradient(135deg,#7f5af0,#2cb67d)' }
-              )}
-            </div>
-            <button
-              onClick={retake}
-              style={{ padding: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, color: '#94a3b8', cursor: 'pointer', fontSize: 13 }}
-            >
-              ↩ Retomar foto
-            </button>
-          </div>
-        )}
-
-        {/* Tip */}
-        {!snapshot && (
-          <p style={{ textAlign: 'center', color: '#334155', fontSize: 12, marginTop: 14 }}>
-            Toca el círculo para capturar · Sube como Vibe (24h) o adjunta a una idea
-          </p>
-        )}
-      </div>
-
-      <style>{`
-        @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
-      `}</style>
-    </div>
-  );
-}
