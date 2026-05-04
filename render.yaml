@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: nox-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: nox-db
+          property: host
+      - key: DB_USER
+        fromDatabase:
+          name: nox-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: nox-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: nox-db
+          property: database
+      - key: DB_PORT
+        fromDatabase:
+          name: nox-db
+          property: port
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+
+databases:
+  - name: nox-db
+    databaseName: nox
+    user: nox_user
+    plan: free
