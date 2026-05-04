@@ -1,12 +1,18 @@
 // payments.js - Endpoints para pagos y suscripciones (Stripe)
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+};
 
 // Crear sesión de pago
 router.post('/create-session', async (req, res) => {
   try {
     const { user_id, price_id, success_url, cancel_url } = req.body;
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ error: 'Pagos no disponibles' });
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
