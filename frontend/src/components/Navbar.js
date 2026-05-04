@@ -17,7 +17,7 @@ function Navbar() {
   return (
     <>
       <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:8,flexWrap:'wrap'}}>
-        <img src={require('../../noxfiles/noxlogo.png')} alt="NOX Logo" style={{height:36}} />
+        <img src={require('../assets/noxlogo.png')} alt="NOX Logo" style={{height:36}} />
         <nav style={{display: 'flex', gap: 12, flexWrap: 'wrap'}}>
           <Link to="/feed">{t('feed')}</Link>
           <Link to="/actividad">Actividad</Link>
