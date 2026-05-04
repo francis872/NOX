@@ -1,0 +1,30 @@
+.nox-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #181828;
+}
+.nox-loader-icon {
+  width: 90px;
+  height: 90px;
+  animation: spin 1.2s linear infinite, pulse 1.6s ease-in-out infinite alternate;
+  margin-bottom: 18px;
+  filter: drop-shadow(0 0 16px #7fd7ff88);
+}
+.nox-loader-text {
+  color: #7fd7ff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 8px #7fd7ff44); }
+  100% { transform: scale(1.12); filter: drop-shadow(0 0 32px #7fd7ffcc); }
+}

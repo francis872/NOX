@@ -1,0 +1,19 @@
+{
+  "welcome": "Welcome to NOX",
+  "feed": "Feed",
+  "profile": "Profile",
+  "explore": "Explore",
+  "notifications": "Notifications",
+  "messages": "Messages",
+  "login": "Login",
+  "logout": "Logout",
+  "register": "Register",
+  "settings": "Settings",
+  "admin": "Admin Panel",
+  "subscribe": "Subscribe",
+  "donate": "Donate",
+  "premium": "Premium",
+  "language": "Language",
+  "spanish": "Spanish",
+  "english": "English"
+}
