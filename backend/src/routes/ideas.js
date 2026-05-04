@@ -6,15 +6,15 @@ const pool = require('../db');
 // Create new structured idea
 router.post('/', async (req, res) => {
   try {
-    const { author_id, premise, argument, evidence, conclusion, counterargument, parent_id } = req.body;
+    const { author_id, premise, argument, evidence, conclusion, counterargument, parent_id, media_url } = req.body;
     let version = 1;
     if (parent_id) {
       const parent = await pool.query('SELECT version FROM ideas WHERE id = $1', [parent_id]);
       version = parent.rows.length ? parent.rows[0].version + 1 : 1;
     }
     const result = await pool.query(
-      'INSERT INTO ideas (author_id, premise, argument, evidence, conclusion, counterargument, parent_id, version) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
-      [author_id, premise, argument, evidence, conclusion, counterargument || null, parent_id || null, version]
+      'INSERT INTO ideas (author_id, premise, argument, evidence, conclusion, counterargument, parent_id, version, media_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+      [author_id, premise, argument, evidence, conclusion, counterargument || null, parent_id || null, version, media_url || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {

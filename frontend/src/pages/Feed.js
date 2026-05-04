@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import StructuredIdeaForm from '../components/StructuredIdeaForm';
+import Vibes from '../components/Vibes';
 
 function Feed() {
   const user = JSON.parse(localStorage.getItem('user'));
@@ -76,6 +77,8 @@ function Feed() {
 
   return (
     <div style={{maxWidth: 680, margin: '0 auto', paddingTop: 24, paddingLeft: 60}}>
+      {/* Vibes strip */}
+      {user && <Vibes user={user} />}
       {/* Header */}
       <div style={{textAlign:'center', marginBottom: 28, paddingTop: 12}}>
         <h2 style={{marginBottom: 8, fontSize: 26, letterSpacing: '-0.5px'}}>Aquí no vienes a mirar. Vienes a pensar.</h2>
@@ -187,8 +190,13 @@ function Feed() {
                 <div><span style={{color:'#7f5af0',fontWeight:600}}>Argumento:</span> {post.argument}</div>
                 <div><span style={{color:'#7f5af0',fontWeight:600}}>Evidencia:</span> {post.evidence}</div>
                 <div><span style={{color:'#7f5af0',fontWeight:600}}>Conclusión:</span> {post.conclusion}</div>
-                {post.counterargument && <div><span style={{color:'#7f5af0',fontWeight:600}}>Contraargumento:</span> {post.counterargument}</div>}
+                  {post.counterargument && <div><span style={{color:'#7f5af0',fontWeight:600}}>Contraargumento:</span> {post.counterargument}</div>}
               </div>
+              {post.media_url && (
+                post.media_url.startsWith('data:image') || post.media_url.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                  ? <img src={post.media_url} alt="media" style={{maxWidth:'100%', maxHeight:280, borderRadius:10, objectFit:'cover', marginBottom:10}} />
+                  : <video src={post.media_url} controls style={{maxWidth:'100%', maxHeight:280, borderRadius:10, marginBottom:10}} />
+              )}
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <button onClick={() => handleReact(post.id, 'ignite')} title="Encender (aporta valor)">🔥 Encender</button>
                 <button onClick={() => handleReact(post.id, 'expand')} title="Expandir (desarrolla la idea)">🧠 Expandir</button>

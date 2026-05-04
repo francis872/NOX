@@ -26,6 +26,7 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
+app.use('/api/vibes', require('./routes/vibes'));
 
 app.get('/', (req, res) => res.json({ status: 'NOX API running' }));
 
