@@ -20,7 +20,11 @@ export default function MyLinkMessages({ user, peer }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const wsUrl = `ws://${window.location.hostname}:3001/?token=${token}`;
+    const backendUrl = process.env.REACT_APP_API_URL || '';
+    const wsBase = backendUrl
+      ? backendUrl.replace(/^https/, 'wss').replace(/^http/, 'ws').replace(/\/api$/, '')
+      : `ws://${window.location.hostname}:3001`;
+    const wsUrl = `${wsBase}/?token=${token}`;
     ws.current = new window.WebSocket(wsUrl);
     ws.current.onmessage = (event) => {
       try {
