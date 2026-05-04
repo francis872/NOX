@@ -1,0 +1,71 @@
+/* darklab.css - Estilo global NOX */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #0e0e1a;
+  color: #e8eaf0;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4 { color: #ffffff; }
+
+a { color: #7fd7ff; text-decoration: none; transition: color 0.2s; }
+a:hover { color: #b3ecff; }
+
+input, textarea, select {
+  background: #1a1a2e;
+  border: 1px solid #2e2e4a;
+  color: #e8eaf0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  width: 100%;
+  margin-bottom: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus { border-color: #7fd7ff; }
+
+button {
+  background: linear-gradient(135deg, #7f5af0, #2cb67d);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+button:hover { opacity: 0.88; transform: translateY(-1px); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+nav { background: #13131f; padding: 10px 20px; border-bottom: 1px solid #2e2e4a; }
+nav a { margin-right: 14px; font-size: 13px; color: #9ca3af; }
+nav a:hover { color: #7fd7ff; }
+
+.card {
+  background: #16162a;
+  border: 1px solid #2e2e4a;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  transition: box-shadow 0.2s;
+}
+.card:hover { box-shadow: 0 0 16px #7f5af055; }
+
+.badge {
+  display: inline-block;
+  background: #7f5af0;
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.error { color: #ff6b6b; font-size: 13px; margin-top: 4px; }
+.success { color: #2cb67d; font-size: 13px; }
