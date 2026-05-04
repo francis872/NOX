@@ -18,7 +18,7 @@ function Login() {
       const res = await axios.post('/api/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
-      navigate(`/feed`);
+      window.location.replace('/feed');
     } catch (err) {
       setError(err.response?.data?.error || 'Credenciales incorrectas');
     } finally {

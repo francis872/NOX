@@ -47,11 +47,22 @@ import './darklab.css';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem('user'));
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2600);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Sincronizar user si otra pestaña o componente actualiza localStorage
+  useEffect(() => {
+    const onStorage = () => {
+      try { setUser(JSON.parse(localStorage.getItem('user'))); } catch { setUser(null); }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   if (loading) return <Loader />;
