@@ -1,6 +1,23 @@
 // App.js - Entry point con loader inicial
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{color:'#ff6b6b',padding:40,fontFamily:'monospace',background:'#0e0e1a',minHeight:'100vh'}}>
+          <h2>Error en la app</h2>
+          <pre style={{whiteSpace:'pre-wrap'}}>{this.state.error.message}</pre>
+          <pre style={{whiteSpace:'pre-wrap',fontSize:11,color:'#aaa'}}>{this.state.error.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import Navbar from './components/Navbar';
 import Loader from './components/Loader';
 import Feed from './pages/Feed';
@@ -40,34 +57,36 @@ export default function App() {
   if (loading) return <Loader />;
 
   return (
-    <Router>
-      {user && <Navbar />}
-      <Routes>
-        <Route path="/" element={user ? <Navigate to="/feed" /> : <Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/feed" element={user ? <Feed /> : <Navigate to="/login" />} />
-        <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
-        <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
-        <Route path="/mylink" element={user ? <MyLink /> : <Navigate to="/login" />} />
-        <Route path="/notificaciones" element={user ? <Notificaciones /> : <Navigate to="/login" />} />
-        <Route path="/actividad" element={user ? <Actividad /> : <Navigate to="/login" />} />
-        <Route path="/insights" element={user ? <Insights /> : <Navigate to="/login" />} />
-        <Route path="/favoritos" element={user ? <Favoritos /> : <Navigate to="/login" />} />
-        <Route path="/bloqueos" element={user ? <Bloqueos /> : <Navigate to="/login" />} />
-        <Route path="/mejores-amigos" element={user ? <MejoresAmigos /> : <Navigate to="/login" />} />
-        <Route path="/tiempo" element={user ? <Tiempo /> : <Navigate to="/login" />} />
-        <Route path="/palabras-filtradas" element={user ? <PalabrasFiltradas /> : <Navigate to="/login" />} />
-        <Route path="/cuentas-silenciadas" element={user ? <CuentasSilenciadas /> : <Navigate to="/login" />} />
-        <Route path="/preferencias-contenido" element={user ? <PreferenciasContenido /> : <Navigate to="/login" />} />
-        <Route path="/suscripciones" element={user ? <Suscripciones /> : <Navigate to="/login" />} />
-        <Route path="/accesibilidad" element={user ? <Accesibilidad /> : <Navigate to="/login" />} />
-        <Route path="/uso-datos" element={user ? <UsoDatos /> : <Navigate to="/login" />} />
-        <Route path="/permisos" element={user ? <Permisos /> : <Navigate to="/login" />} />
-        <Route path="/ayuda" element={user ? <Ayuda /> : <Navigate to="/login" />} />
-        <Route path="/centro-privacidad" element={user ? <CentroPrivacidad /> : <Navigate to="/login" />} />
-        <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" />} />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        {user && <Navbar />}
+        <Routes>
+          <Route path="/" element={user ? <Navigate to="/feed" /> : <Navigate to="/login" />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/feed" element={user ? <Feed /> : <Navigate to="/login" />} />
+          <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
+          <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
+          <Route path="/mylink" element={user ? <MyLink /> : <Navigate to="/login" />} />
+          <Route path="/notificaciones" element={user ? <Notificaciones /> : <Navigate to="/login" />} />
+          <Route path="/actividad" element={user ? <Actividad /> : <Navigate to="/login" />} />
+          <Route path="/insights" element={user ? <Insights /> : <Navigate to="/login" />} />
+          <Route path="/favoritos" element={user ? <Favoritos /> : <Navigate to="/login" />} />
+          <Route path="/bloqueos" element={user ? <Bloqueos /> : <Navigate to="/login" />} />
+          <Route path="/mejores-amigos" element={user ? <MejoresAmigos /> : <Navigate to="/login" />} />
+          <Route path="/tiempo" element={user ? <Tiempo /> : <Navigate to="/login" />} />
+          <Route path="/palabras-filtradas" element={user ? <PalabrasFiltradas /> : <Navigate to="/login" />} />
+          <Route path="/cuentas-silenciadas" element={user ? <CuentasSilenciadas /> : <Navigate to="/login" />} />
+          <Route path="/preferencias-contenido" element={user ? <PreferenciasContenido /> : <Navigate to="/login" />} />
+          <Route path="/suscripciones" element={user ? <Suscripciones /> : <Navigate to="/login" />} />
+          <Route path="/accesibilidad" element={user ? <Accesibilidad /> : <Navigate to="/login" />} />
+          <Route path="/uso-datos" element={user ? <UsoDatos /> : <Navigate to="/login" />} />
+          <Route path="/permisos" element={user ? <Permisos /> : <Navigate to="/login" />} />
+          <Route path="/ayuda" element={user ? <Ayuda /> : <Navigate to="/login" />} />
+          <Route path="/centro-privacidad" element={user ? <CentroPrivacidad /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
