@@ -7,11 +7,11 @@
   background: #181828;
 }
 .nox-loader-icon {
-  width: 90px;
-  height: 90px;
-  animation: spin 1.2s linear infinite, pulse 1.6s ease-in-out infinite alternate;
-  margin-bottom: 18px;
-  filter: drop-shadow(0 0 16px #7fd7ff88);
+  width: 140px;
+  height: 140px;
+  animation: pulse 1.6s ease-in-out infinite alternate;
+  margin-bottom: 22px;
+  filter: drop-shadow(0 0 24px #7fd7ffaa);
 }
 .nox-loader-text {
   color: #7fd7ff;

@@ -1,39 +1,58 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import './auth.css';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       const res = await axios.post('/api/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
-      navigate(`/profile/${res.data.user.id}`);
+      navigate(`/feed`);
     } catch (err) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión');
+      setError(err.response?.data?.error || 'Credenciales incorrectas');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Entra a NOX</h2>
-      <div style={{fontSize:14, color:'#7fd7ff', marginBottom:16, fontFamily:'inherit', textAlign:'center'}}>
-        Aquí no vienes a mirar. Vienes a pensar.<br/>
-        <span style={{color:'#bfc4c9'}}>Un sistema para encender ideas en personas que piensan diferente.</span>
+    <div className="auth-bg">
+      <div className="auth-card">
+        <div className="auth-logo-row">
+          <img src={require('../assets/noxlogo.png')} alt="NOX" className="auth-logo" />
+        </div>
+        <h1 className="auth-title">Entra a NOX</h1>
+        <p className="auth-sub">Aquí no vienes a mirar.<br/>Vienes a <span className="auth-accent">pensar</span>.</p>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-field">
+            <label>Email</label>
+            <input type="email" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div className="auth-field">
+            <label>Contraseña</label>
+            <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
+          </div>
+          {error && <div className="auth-error">{error}</div>}
+          <button type="submit" className="auth-btn" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+        <div className="auth-footer">
+          ¿No tienes cuenta? <Link to="/register" className="auth-link">Créala gratis</Link>
+        </div>
+        <div className="auth-badge">FREE · SIN TARJETA · SIEMPRE</div>
       </div>
-      <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button type="submit">Entrar</button>
-      </form>
-      {error && <p style={{color:'red'}}>{error}</p>}
     </div>
   );
 }
