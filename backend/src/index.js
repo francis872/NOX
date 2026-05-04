@@ -3,7 +3,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-const setupMyLinkServer = require('./myLinkSocket');
 
 const app = express();
 app.use(cors());
@@ -30,12 +29,16 @@ app.use('/api/subscriptions', require('./routes/subscriptions'));
 
 app.get('/', (req, res) => res.json({ status: 'NOX API running' }));
 
-const PORT = process.env.PORT || 3001;
-const server = http.createServer(app);
+// Exportar para Vercel serverless
+module.exports = app;
 
-// WebSocket MyLink
-setupMyLinkServer(server);
-
-server.listen(PORT, () => {
-  console.log(`NOX Backend corriendo en puerto ${PORT}`);
-});
+// Solo arrancar servidor HTTP/WS en entorno local
+if (require.main === module) {
+  const setupMyLinkServer = require('./myLinkSocket');
+  const PORT = process.env.PORT || 3001;
+  const server = http.createServer(app);
+  setupMyLinkServer(server);
+  server.listen(PORT, () => {
+    console.log(`NOX Backend corriendo en puerto ${PORT}`);
+  });
+}
