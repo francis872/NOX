@@ -80,8 +80,25 @@ function Feed() {
 
   const handleReact = async (id, type) => {
     try {
-      const res = await axios.post(`/api/ideas/${id}/react`, { type });
-      setFeed(feed.map(post => post.id === id ? res.data : post));
+      await axios.post(`/api/ideas/${id}/react`, { user_id: user?.id, reaction: type });
+      // Update counts locally — backend returns { success: true }, not the post
+      setFeed(prev => prev.map(post => {
+        if (post.id !== id) return post;
+        const col = type === 'ignite' ? 'ignite_count' : type === 'expand' ? 'expand_count' : 'challenge_count';
+        const updated = { ...post, [col]: (post[col] || 0) + 1 };
+        updated.score = (updated.ignite_count || 0) * 3 + (updated.expand_count || 0) * 2 + (updated.challenge_count || 0);
+        return updated;
+      }));
+    } catch (err) {
+      if (err.response?.status === 403) setError('No puedes reaccionar a tu propia idea');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar esta idea?')) return;
+    try {
+      await axios.delete(`/api/ideas/${id}`);
+      setFeed(prev => prev.filter(p => p.id !== id));
     } catch {}
   };
 
@@ -154,7 +171,7 @@ function Feed() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '20px 16px',
           }}
-          onClick={() => setShowIdeaModal(false)}
+          onClick={() => { setShowIdeaModal(false); setCameraPhoto(null); }}
         >
           <div
             style={{
@@ -172,7 +189,7 @@ function Feed() {
             onClick={e => e.stopPropagation()}
           >
             <button
-              onClick={() => setShowIdeaModal(false)}
+              onClick={() => { setShowIdeaModal(false); setCameraPhoto(null); }}
               style={{
                 position: 'absolute', top: 14, right: 16,
                 background: 'none', border: 'none',
@@ -231,14 +248,14 @@ function Feed() {
                   ? <img src={post.media_url} alt="media" style={{maxWidth:'100%', maxHeight:280, borderRadius:10, objectFit:'cover', marginBottom:10}} />
                   : <video src={post.media_url} controls style={{maxWidth:'100%', maxHeight:280, borderRadius:10, marginBottom:10}} />
               )}
-              <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                <button onClick={() => handleReact(post.id, 'ignite')} title="Encender (aporta valor)">🔥 Encender</button>
-                <button onClick={() => handleReact(post.id, 'expand')} title="Expandir (desarrolla la idea)">🧠 Expandir</button>
-                <button onClick={() => handleReact(post.id, 'challenge')} title="Desafiar (debate)">⚡ Desafiar</button>
-                <span style={{marginLeft:8}}>
-                  🔥 {post.ignite_count || 0}  🧠 {post.expand_count || 0}  ⚡ {post.challenge_count || 0}
-                </span>
-                <span style={{marginLeft:16, fontSize:11, color:'#888'}}>Score: {post.score && post.score.toFixed(0)}</span>
+              <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+                <button onClick={() => handleReact(post.id, 'ignite')} title="Encender" style={{background:'rgba(247,37,133,0.12)',border:'1px solid rgba(247,37,133,0.25)',borderRadius:8,color:'#f72585',padding:'5px 10px',cursor:'pointer',fontSize:12,fontWeight:600}}>🔥 {post.ignite_count||0}</button>
+                <button onClick={() => handleReact(post.id, 'expand')} title="Expandir" style={{background:'rgba(127,90,240,0.12)',border:'1px solid rgba(127,90,240,0.25)',borderRadius:8,color:'#7f5af0',padding:'5px 10px',cursor:'pointer',fontSize:12,fontWeight:600}}>🧠 {post.expand_count||0}</button>
+                <button onClick={() => handleReact(post.id, 'challenge')} title="Desafiar" style={{background:'rgba(44,182,125,0.12)',border:'1px solid rgba(44,182,125,0.25)',borderRadius:8,color:'#2cb67d',padding:'5px 10px',cursor:'pointer',fontSize:12,fontWeight:600}}>⚡ {post.challenge_count||0}</button>
+                {(() => { const s = (post.ignite_count||0)*3+(post.expand_count||0)*2+(post.challenge_count||0); return s > 0 ? <span style={{marginLeft:6,fontSize:11,color:'#64748b',fontWeight:600}}>Score: {s}</span> : null; })()}
+                {user && post.author_id === user.id && (
+                  <button onClick={() => handleDelete(post.id)} title="Eliminar" style={{marginLeft:'auto',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:8,color:'#ef4444',padding:'5px 8px',cursor:'pointer',fontSize:12}}>🗑</button>
+                )}
               </div>
               <div style={{fontSize: 10, color: '#475569', marginTop:6}}>{new Date(post.created_at).toLocaleString()}</div>
             </div>
