@@ -103,3 +103,11 @@ CREATE TABLE IF NOT EXISTS contributions (
   weight INTEGER DEFAULT 1,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  channel VARCHAR(128) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, channel)
+);

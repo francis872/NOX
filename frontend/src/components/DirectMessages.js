@@ -18,8 +18,10 @@ export default function MyLinkMessages({ user, peer }) {
 
   // WebSocket conexión
   useEffect(() => {
-    if (!user?.token) return;
-    ws.current = new window.WebSocket(`ws://localhost:3000/?token=${user.token}`);
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const wsUrl = `ws://${window.location.hostname}:3001/?token=${token}`;
+    ws.current = new window.WebSocket(wsUrl);
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);

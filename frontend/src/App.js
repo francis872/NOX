@@ -25,6 +25,7 @@ import UsoDatos from './pages/UsoDatos';
 import Permisos from './pages/Permisos';
 import Ayuda from './pages/Ayuda';
 import CentroPrivacidad from './pages/CentroPrivacidad';
+import Admin from './pages/Admin';
 import './darklab.css';
 
 export default function App() {
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/permisos" element={user ? <Permisos /> : <Navigate to="/login" />} />
         <Route path="/ayuda" element={user ? <Ayuda /> : <Navigate to="/login" />} />
         <Route path="/centro-privacidad" element={user ? <CentroPrivacidad /> : <Navigate to="/login" />} />
+        <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" />} />
       </Routes>
     </Router>
   );
