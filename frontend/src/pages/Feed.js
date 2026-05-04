@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useLocation } from 'react-router-dom';
 import StructuredIdeaForm from '../components/StructuredIdeaForm';
 import Vibes from '../components/Vibes';
+import Actions from '../components/Actions';
 import CameraCapture from '../components/CameraCapture';
 
 function Feed() {
@@ -117,6 +118,8 @@ function Feed() {
     <div style={{maxWidth: 680, margin: '0 auto', paddingTop: 24, paddingLeft: 60}}>
       {/* Vibes strip */}
       {user && <Vibes user={user} />}
+      {/* Actions strip */}
+      {user && <Actions user={user} />}
       {/* Header */}
       <div style={{textAlign:'center', marginBottom: 28, paddingTop: 12}}>
         <h2 style={{marginBottom: 8, fontSize: 26, letterSpacing: '-0.5px'}}>Aquí no vienes a mirar. Vienes a pensar.</h2>

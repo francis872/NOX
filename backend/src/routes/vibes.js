@@ -3,9 +3,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Get all active vibes (not expired)
+// Get all active vibes (not expired) — also deletes expired ones
 router.get('/', async (req, res) => {
   try {
+    // Auto-cleanup expired vibes
+    await pool.query('DELETE FROM vibes WHERE expires_at <= NOW()');
     const result = await pool.query(
       `SELECT v.*, u.username FROM vibes v
        JOIN users u ON v.author_id = u.id
