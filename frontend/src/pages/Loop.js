@@ -1,6 +1,6 @@
 // Loop.js — Vertical idea feed (like Reels but for thoughts)
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const MOCK = [
@@ -42,7 +42,7 @@ const BG_ACCENTS = [
 ];
 
 /* ─── Create Loop Modal ─────────────────────── */
-function CreateLoopModal({ user, onClose, onCreated }) {
+function CreateLoopModal({ user, onClose, onCreated, initialMedia }) {
   const [premise, setPremise] = useState('');
   const [argument, setArgument] = useState('');
   const [mediaType, setMediaType] = useState('text');
@@ -51,6 +51,13 @@ function CreateLoopModal({ user, onClose, onCreated }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const fileRef = useRef(null);
+
+  useEffect(() => {
+    if (!initialMedia?.media_url) return;
+    setMediaData(initialMedia.media_url);
+    setPreview(initialMedia.media_url);
+    setMediaType(initialMedia.media_type || 'image');
+  }, [initialMedia]);
 
   const handleFile = (e) => {
     const file = e.target.files?.[0];
@@ -301,9 +308,19 @@ export default function Loop() {
   const [loops, setLoops] = useState([]);
   const [current, setCurrent] = useState(0);
   const [showCreate, setShowCreate] = useState(false);
+  const [initialMedia, setInitialMedia] = useState(null);
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user'));
+
+  useEffect(() => {
+    const loopMedia = location.state?.loopMediaToAttach;
+    if (!loopMedia?.media_url) return;
+    setInitialMedia(loopMedia);
+    setShowCreate(true);
+    window.history.replaceState({}, '');
+  }, [location.state]);
 
   useEffect(() => {
     // Load ALL ideas (no user_id filter) to see everyone's loops
@@ -351,14 +368,33 @@ export default function Loop() {
         }}>LOOP</span>
         {/* Create Loop button */}
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => {
+            setInitialMedia(null);
+            setShowCreate(true);
+          }}
           style={{ position:'absolute', right:16, top:12, background:'linear-gradient(135deg,#7f5af0,#2cb67d)', border:'none', borderRadius:20, padding:'6px 16px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', pointerEvents:'auto', letterSpacing:'0.5px' }}
         >
           + Crear
         </button>
+        <button
+          onClick={() => navigate('/camara', { state: { target: 'loop', preferredMode: 'boomerang' } })}
+          style={{ position:'absolute', right:108, top:12, background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.16)', borderRadius:20, padding:'6px 14px', color:'#e2e8f0', fontSize:13, fontWeight:700, cursor:'pointer', pointerEvents:'auto' }}
+        >
+          📸 Cámara
+        </button>
       </div>
 
-      {showCreate && user && <CreateLoopModal user={user} onClose={() => setShowCreate(false)} onCreated={handleCreated} />}
+      {showCreate && user && (
+        <CreateLoopModal
+          user={user}
+          onClose={() => {
+            setShowCreate(false);
+            setInitialMedia(null);
+          }}
+          onCreated={handleCreated}
+          initialMedia={initialMedia}
+        />
+      )}
 
       {/* Scroll feed */}
       <div

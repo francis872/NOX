@@ -1,7 +1,7 @@
 // Camera.js — Página dedicada de cámara (Foto / Video / Boomerang / Galería)
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const MODES = [
   { id: 'photo',     label: '📸 Foto' },
@@ -13,6 +13,9 @@ const MODES = [
 export default function Camera() {
   const user     = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
+  const location = useLocation();
+  const navTarget = location.state?.target || 'feed';
+  const preferredMode = location.state?.preferredMode;
 
   const videoRef         = useRef();
   const canvasRef        = useRef();
@@ -48,6 +51,12 @@ export default function Camera() {
       setCameraErr('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (preferredMode && MODES.some((m) => m.id === preferredMode)) {
+      setMode(preferredMode);
+    }
+  }, [preferredMode]);
 
   useEffect(() => {
     if (mode !== 'gallery') startCamera(facing);
@@ -189,7 +198,25 @@ export default function Camera() {
     finally { setPosting(false); }
   };
 
-  const attachToIdea = () => navigate('/feed', { state: { photoToAttach: snapshot } });
+  const attachToIdea = () => {
+    if (navTarget === 'loop') {
+      const resolvedType = mode === 'boomerang'
+        ? 'boomerang'
+        : snapType === 'video'
+          ? 'video'
+          : 'image';
+      navigate('/loop', {
+        state: {
+          loopMediaToAttach: {
+            media_url: snapshot,
+            media_type: resolvedType,
+          },
+        },
+      });
+      return;
+    }
+    navigate('/feed', { state: { photoToAttach: snapshot } });
+  };
 
   const actionBtn = (onClick, label, style = {}) => (
     <button onClick={onClick} style={{ flex: 1, padding: 13, border: 'none', borderRadius: 12, cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 14, transition: 'transform 0.15s', ...style }}
@@ -352,7 +379,7 @@ export default function Camera() {
             <div style={{ display: 'flex', gap: 10 }}>
               {actionBtn(postAsVibe, posting ? '⏳ Publicando...' : '✨ Subir como Vibe',
                 { background: posting ? '#334155' : 'linear-gradient(135deg,#f72585,#7f5af0)', cursor: posting ? 'not-allowed' : 'pointer' })}
-              {actionBtn(attachToIdea, '💡 Adjuntar a Idea',
+              {actionBtn(attachToIdea, navTarget === 'loop' ? '🔁 Usar en Loop' : '💡 Adjuntar a Idea',
                 { background: 'linear-gradient(135deg,#7f5af0,#2cb67d)' })}
             </div>
             <button onClick={retake}
