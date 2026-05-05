@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import { assignExperiment, convertExperiment } from '../utils/analytics';
 
 function Profile() {
   const { id } = useParams();
@@ -16,6 +17,7 @@ function Profile() {
   const [activeTab, setActiveTab] = useState('ideas');
   const [following, setFollowing] = useState(false);
   const [viewingVibe, setViewingVibe] = useState(null);
+  const [messageCtaCopy, setMessageCtaCopy] = useState('Mensaje');
 
   useEffect(() => {
     axios.get(`/api/users/${id}`)
@@ -46,6 +48,13 @@ function Profile() {
         .catch(() => {});
     }
   }, [id]);
+
+  useEffect(() => {
+    assignExperiment('EXP-003').then((v) => {
+      if (v === 'hablar_ahora') setMessageCtaCopy('Hablar ahora');
+      else setMessageCtaCopy('Mensaje');
+    });
+  }, []);
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -179,7 +188,15 @@ function Profile() {
               >
                 {following ? 'Siguiendo ✓' : 'Seguir'}
               </button>
-              <button onClick={() => navigate('/mylink')} style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}>Mensaje</button>
+              <button
+                onClick={() => {
+                  convertExperiment('EXP-003', 'message_sent');
+                  navigate('/mylink');
+                }}
+                style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}
+              >
+                {messageCtaCopy}
+              </button>
             </>
           )}
         </div>

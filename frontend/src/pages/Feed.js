@@ -5,6 +5,7 @@ import StructuredIdeaForm from '../components/StructuredIdeaForm';
 import Vibes from '../components/Vibes';
 import Actions from '../components/Actions';
 import CameraCapture from '../components/CameraCapture';
+import { assignExperiment, convertExperiment } from '../utils/analytics';
 
 function Feed() {
   const user = JSON.parse(localStorage.getItem('user'));
@@ -20,6 +21,7 @@ function Feed() {
   const [showIdeaModal, setShowIdeaModal] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraPhoto, setCameraPhoto] = useState(null);
+  const [ctaVariant, setCtaVariant] = useState('control_top');
 
   // Open idea modal pre-filled if coming from Camera page
   useEffect(() => {
@@ -40,6 +42,12 @@ function Feed() {
         .then(res => setUserProfile(res.data))
         .catch(() => {});
     }
+  }, []);
+
+  useEffect(() => {
+    assignExperiment('EXP-001').then((v) => {
+      if (v) setCtaVariant(v);
+    });
   }, []);
 
 
@@ -105,6 +113,7 @@ function Feed() {
 
   const handleIdeaSubmit = async (fields) => {
     await handleStructuredIdea(fields);
+    convertExperiment('EXP-001', 'idea_created');
     setShowIdeaModal(false);
     setCameraPhoto(null);
   };
@@ -134,6 +143,7 @@ function Feed() {
       </div>
 
       {/* Action buttons */}
+      {ctaVariant === 'control_top' && (
       <div style={{display:'flex', justifyContent:'center', gap: 12, marginBottom: 24, flexWrap: 'wrap'}}>
         <button
           onClick={() => setShowIdeaModal(true)}
@@ -162,6 +172,7 @@ function Feed() {
           📸 Cámara
         </button>
       </div>
+      )}
 
       {/* Idea modal */}
       {showIdeaModal && (
@@ -265,6 +276,28 @@ function Feed() {
           );
         })}
       </div>
+
+      {ctaVariant === 'sticky_bottom' && (
+        <button
+          onClick={() => setShowIdeaModal(true)}
+          style={{
+            position:'fixed',
+            bottom:20,
+            right:20,
+            zIndex:5000,
+            background:'linear-gradient(135deg,#7f5af0,#2cb67d)',
+            border:'none',
+            borderRadius:26,
+            padding:'12px 20px',
+            color:'#fff',
+            fontWeight:800,
+            cursor:'pointer',
+            boxShadow:'0 10px 24px rgba(127,90,240,0.35)'
+          }}
+        >
+          + Crear idea
+        </button>
+      )}
     </div>
   );
 }

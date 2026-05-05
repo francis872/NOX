@@ -150,4 +150,55 @@ router.get('/stats/:key', async (req, res) => {
   }
 });
 
+router.get('/panel', async (_req, res) => {
+  try {
+    const experiments = await pool.query('SELECT key, name, target_metric FROM experiments ORDER BY id ASC');
+    const response = [];
+
+    for (const exp of experiments.rows) {
+      const rows = await pool.query(
+        `SELECT
+           ea.variant,
+           COUNT(*)::int AS participants,
+           COUNT(ec.id)::int AS conversions
+         FROM experiment_assignments ea
+         LEFT JOIN experiment_conversions ec
+           ON ec.experiment_key = ea.experiment_key
+          AND ec.variant = ea.variant
+          AND ec.metric_key = $2
+         WHERE ea.experiment_key = $1
+         GROUP BY ea.variant
+         ORDER BY ea.variant`,
+        [exp.key, exp.target_metric]
+      );
+
+      const variants = rows.rows.map((r) => {
+        const participants = Number(r.participants || 0);
+        const conversions = Number(r.conversions || 0);
+        const conversion_rate = participants ? Number(((conversions / participants) * 100).toFixed(2)) : 0;
+        return { ...r, participants, conversions, conversion_rate, uplift_vs_control: 0 };
+      });
+
+      const controlRate = variants.length ? variants[0].conversion_rate : 0;
+      const withUplift = variants.map((v, idx) => ({
+        ...v,
+        uplift_vs_control: idx === 0 || controlRate === 0
+          ? 0
+          : Number((((v.conversion_rate - controlRate) / controlRate) * 100).toFixed(2)),
+      }));
+
+      response.push({
+        key: exp.key,
+        name: exp.name,
+        target_metric: exp.target_metric,
+        variants: withUplift,
+      });
+    }
+
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -51,3 +51,19 @@ export async function assignExperiment(experimentKey) {
     return null;
   }
 }
+
+export async function convertExperiment(experimentKey, metricKey, value = 1) {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const visitorId = getOrCreateVisitorId();
+    await axios.post('/api/experiments/convert', {
+      experiment_key: experimentKey,
+      metric_key: metricKey,
+      user_id: user?.id || null,
+      visitor_id: user ? null : visitorId,
+      value,
+    });
+  } catch {
+    // Ignore conversion failures.
+  }
+}

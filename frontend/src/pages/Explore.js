@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { assignExperiment, convertExperiment } from '../utils/analytics';
 
 const AVATAR_COLORS = ['#7f5af0','#2cb67d','#f72585','#4cc9f0','#f4a261'];
 function avatarColor(n){ return AVATAR_COLORS[(n?.charCodeAt(0)||0) % AVATAR_COLORS.length]; }
@@ -35,20 +36,45 @@ function UserCard({ u, onFollow, onUnfollow }) {
 export default function Explore() {
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const [users, setUsers]     = useState([]);
+  const [ideas, setIdeas]     = useState([]);
   const [search, setSearch]   = useState('');
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('personas');
+  const [orderVariant, setOrderVariant] = useState('control_tendencias');
 
   useEffect(() => {
     setLoading(true);
-    axios.get('/api/users?follower_id=' + (currentUser?.id || 0))
-      .then(res => setUsers((res.data || []).filter(u => u.id !== currentUser?.id)))
+    Promise.all([
+      axios.get('/api/users?follower_id=' + (currentUser?.id || 0)),
+      axios.get('/api/ideas'),
+    ])
+      .then(([usersRes, ideasRes]) => {
+        setUsers((usersRes.data || []).filter(u => u.id !== currentUser?.id));
+        setIdeas(ideasRes.data || []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
 
-  const follow   = async id => { await axios.post('/api/follow/'+id+'/follow',   { follower_id: currentUser.id }).catch(()=>{}); setUsers(p=>p.map(u=>u.id===id?{...u,followed:true}:u)); };
+  useEffect(() => {
+    assignExperiment('EXP-002').then((v) => {
+      if (!v) return;
+      setOrderVariant(v);
+      if (v === 'personas_first') setTab('personas');
+      if (v === 'control_tendencias') setTab('tendencias');
+    });
+  }, []);
+
+  const follow   = async id => { await axios.post('/api/follow/'+id+'/follow',   { follower_id: currentUser.id }).catch(()=>{}); setUsers(p=>p.map(u=>u.id===id?{...u,followed:true}:u)); convertExperiment('EXP-002', 'follow_created'); };
   const unfollow = async id => { await axios.post('/api/follow/'+id+'/unfollow', { follower_id: currentUser.id }).catch(()=>{}); setUsers(p=>p.map(u=>u.id===id?{...u,followed:false}:u)); };
   const filtered = users.filter(u => !search || u.username?.toLowerCase().includes(search.toLowerCase()));
+  const trending = [...ideas]
+    .sort((a,b) => ((b.ignite_count||0)+(b.expand_count||0)+(b.challenge_count||0)) - ((a.ignite_count||0)+(a.expand_count||0)+(a.challenge_count||0)))
+    .slice(0, 10);
+
+  const tabs = orderVariant === 'personas_first'
+    ? ['personas', 'tendencias', 'ideas']
+    : ['tendencias', 'personas', 'ideas'];
 
   return (
     <div style={{ maxWidth:640, margin:'0 auto', padding:'0 16px 80px' }}>
@@ -61,16 +87,59 @@ export default function Explore() {
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por usuario..."
           style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:14, padding:'11px 14px 11px 40px', color:'#e2e8f0', fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
       </div>
+      <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+        {tabs.map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              padding:'8px 14px',
+              borderRadius:16,
+              border: tab === t ? '1px solid rgba(127,90,240,0.4)' : '1px solid rgba(255,255,255,0.08)',
+              background: tab === t ? 'rgba(127,90,240,0.15)' : 'rgba(255,255,255,0.03)',
+              color: tab === t ? '#e2e8f0' : '#94a3b8',
+              cursor:'pointer',
+              textTransform:'capitalize',
+              fontWeight:700,
+              fontSize:12,
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
       {loading && <div style={{ textAlign:'center', padding:'40px 0', color:'#334155' }}>Cargando usuarios...</div>}
-      {!loading && filtered.length === 0 && (
+      {!loading && tab === 'personas' && filtered.length === 0 && (
         <div style={{ textAlign:'center', padding:'60px 0' }}>
           <div style={{ fontSize:42, marginBottom:12 }}>&#128270;</div>
           <div style={{ color:'#475569', fontSize:15 }}>{search ? 'Sin resultados' : 'No hay usuarios todavia'}</div>
         </div>
       )}
-      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        {filtered.map(u => <UserCard key={u.id} u={u} onFollow={follow} onUnfollow={unfollow} />)}
-      </div>
+      {tab === 'personas' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {filtered.map(u => <UserCard key={u.id} u={u} onFollow={follow} onUnfollow={unfollow} />)}
+        </div>
+      )}
+      {tab === 'tendencias' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {trending.map((idea) => (
+            <div key={idea.id} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:'12px 14px' }}>
+              <div style={{ fontSize:14, color:'#e2e8f0', marginBottom:6 }}>{idea.premise}</div>
+              <div style={{ fontSize:12, color:'#64748b' }}>🔥{idea.ignite_count||0} · 🧠{idea.expand_count||0} · ⚡{idea.challenge_count||0}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {tab === 'ideas' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          {ideas.slice(0, 20).map((idea) => (
+            <div key={idea.id} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:'12px 14px' }}>
+              <div style={{ fontSize:14, color:'#e2e8f0', marginBottom:6 }}>{idea.premise}</div>
+              {idea.argument && <div style={{ fontSize:12, color:'#94a3b8' }}>{idea.argument}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -110,4 +110,51 @@ router.get('/kpis', async (_req, res) => {
   }
 });
 
+router.get('/cohorts', async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      WITH signup_cohorts AS (
+        SELECT created_at::date AS cohort_day, id AS user_id
+        FROM users
+        WHERE created_at::date >= CURRENT_DATE - INTERVAL '45 days'
+      ),
+      retention AS (
+        SELECT
+          c.cohort_day,
+          COUNT(*)::int AS cohort_size,
+          COUNT(*) FILTER (
+            WHERE EXISTS (
+              SELECT 1 FROM analytics_events e
+              WHERE e.user_id = c.user_id
+                AND e.created_at::date = c.cohort_day + INTERVAL '7 days'
+            )
+          )::int AS retained_d7,
+          COUNT(*) FILTER (
+            WHERE EXISTS (
+              SELECT 1 FROM analytics_events e
+              WHERE e.user_id = c.user_id
+                AND e.created_at::date = c.cohort_day + INTERVAL '30 days'
+            )
+          )::int AS retained_d30
+        FROM signup_cohorts c
+        GROUP BY c.cohort_day
+      )
+      SELECT
+        cohort_day,
+        cohort_size,
+        retained_d7,
+        retained_d30,
+        CASE WHEN cohort_size > 0 THEN ROUND((retained_d7::numeric / cohort_size::numeric) * 100, 2) ELSE 0 END AS d7_rate,
+        CASE WHEN cohort_size > 0 THEN ROUND((retained_d30::numeric / cohort_size::numeric) * 100, 2) ELSE 0 END AS d30_rate
+      FROM retention
+      ORDER BY cohort_day DESC
+      LIMIT 12
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -7,6 +7,7 @@ export default function MyLinkMessages({ user, peer }) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
+  const [presence, setPresence] = useState(null);
   const bottomRef = useRef(null);
   const lastCountRef = useRef(0);
 
@@ -15,12 +16,19 @@ export default function MyLinkMessages({ user, peer }) {
     try {
       const res = await axios.get(`/api/messages/${user.id}/${peer.id}`);
       const data = res.data || [];
-      if (data.length !== lastCountRef.current) {
-        lastCountRef.current = data.length;
-        setMessages(data);
-      }
+      lastCountRef.current = data.length;
+      setMessages(data);
     } catch {}
   }, [user?.id, peer?.id]);
+
+  const loadPresence = useCallback(async () => {
+    if (!peer?.id || !user?.id) return;
+    try {
+      await axios.post('/api/users/heartbeat', { user_id: user.id });
+      const res = await axios.get(`/api/users/presence?ids=${peer.id}`);
+      setPresence((res.data || [])[0] || null);
+    } catch {}
+  }, [peer?.id, user?.id]);
 
   // Carga inicial
   useEffect(() => { loadMessages(); }, [loadMessages]);
@@ -30,6 +38,12 @@ export default function MyLinkMessages({ user, peer }) {
     const timer = setInterval(loadMessages, 3000);
     return () => clearInterval(timer);
   }, [loadMessages]);
+
+  useEffect(() => {
+    loadPresence();
+    const timer = setInterval(loadPresence, 10000);
+    return () => clearInterval(timer);
+  }, [loadPresence]);
 
   // Scroll al final al actualizar mensajes
   useEffect(() => {
@@ -74,6 +88,24 @@ export default function MyLinkMessages({ user, peer }) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const fmtLastSeen = (d) => {
+    if (!d) return 'sin actividad reciente';
+    const diff = Date.now() - new Date(d).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins <= 1) return 'hace un momento';
+    if (mins < 60) return `hace ${mins} min`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `hace ${hours} h`;
+    return `el ${new Date(d).toLocaleDateString()}`;
+  };
+
+  const statusText = (m) => {
+    if (String(m.sender_id) !== String(user?.id)) return '';
+    if (m.read_at) return 'Leído';
+    if (m.delivered_at) return 'Entregado';
+    return 'Enviado';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'transparent' }}>
       {/* Messages area */}
@@ -82,6 +114,12 @@ export default function MyLinkMessages({ user, peer }) {
         display: 'flex', flexDirection: 'column', gap: 6,
         scrollbarWidth: 'thin', scrollbarColor: 'rgba(127,90,240,0.3) transparent',
       }}>
+        {peer && (
+          <div style={{ textAlign:'center', fontSize:11, color:'#64748b', marginBottom:6 }}>
+            {presence?.online ? 'En línea ahora' : `Última vez activo: ${fmtLastSeen(presence?.last_active_at)}`}
+          </div>
+        )}
+
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: '#334155', fontSize: 13, padding: '60px 0' }}>
             <div style={{ fontSize: 36, marginBottom: 10 }}>💬</div>
@@ -113,7 +151,7 @@ export default function MyLinkMessages({ user, peer }) {
                   fontSize: 10, color: '#334155', marginTop: 3,
                   textAlign: isMine ? 'right' : 'left', paddingLeft: 4, paddingRight: 4,
                 }}>
-                  {fmt(msg.created_at)}
+                  {fmt(msg.created_at)} {isMine && <span style={{ color:'#94a3b8' }}>· {statusText(msg)}</span>}
                 </div>
               </div>
             </div>

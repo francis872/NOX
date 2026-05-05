@@ -2,6 +2,42 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
+// Heartbeat para presencia en tiempo real.
+router.post('/heartbeat', async (req, res) => {
+  const { user_id } = req.body;
+  if (!user_id) return res.status(400).json({ error: 'Falta user_id' });
+  try {
+    await pool.query('UPDATE users SET last_active_at = NOW() WHERE id = $1', [user_id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al actualizar presencia' });
+  }
+});
+
+// Presencia por lista de IDs.
+router.get('/presence', async (req, res) => {
+  const idsRaw = req.query.ids;
+  if (!idsRaw) return res.json([]);
+  const ids = String(idsRaw)
+    .split(',')
+    .map((v) => Number(v.trim()))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (!ids.length) return res.json([]);
+
+  try {
+    const result = await pool.query(
+      `SELECT id, username, last_active_at,
+              (last_active_at >= NOW() - INTERVAL '2 minutes') AS online
+       FROM users
+       WHERE id = ANY($1)`,
+      [ids]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener presencia' });
+  }
+});
+
 // Obtener publicaciones (ideas) de un usuario
 router.get('/:id/posts', async (req, res) => {
   const viewerId = req.query.viewer_id;
@@ -34,7 +70,7 @@ router.get('/:id/posts', async (req, res) => {
 // Obtener perfil de usuario con contadores
 router.get('/:id', async (req, res) => {
   try {
-    const userRes = await pool.query('SELECT id, username, email, bio, interests, principios, age, origin, account_type, verified, is_private, thought_level, created_at FROM users WHERE id = $1', [req.params.id]);
+    const userRes = await pool.query('SELECT id, username, email, bio, interests, principios, age, origin, account_type, verified, is_private, thought_level, last_active_at, created_at FROM users WHERE id = $1', [req.params.id]);
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -109,7 +145,7 @@ router.put('/:id', async (req, res) => {
 router.get('/', async (req, res) => {
   const follower_id = req.query.follower_id;
   try {
-    let usersRes = await pool.query('SELECT id, username, email FROM users');
+    let usersRes = await pool.query('SELECT id, username, email, last_active_at FROM users');
     let users = usersRes.rows;
     if (follower_id) {
       const followedRes = await pool.query('SELECT user_id FROM followers WHERE follower_id = $1', [follower_id]);

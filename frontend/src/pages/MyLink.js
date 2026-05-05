@@ -19,12 +19,37 @@ export default function MyLinkPage() {
   const [users, setUsers] = useState([]);
   const [selectedPeer, setSelectedPeer] = useState(null);
   const [search, setSearch] = useState('');
+  const [presence, setPresence] = useState(null);
 
   useEffect(() => {
     axios.get('/api/users').then(res => {
       setUsers((res.data || []).filter(u => u.id !== user?.id));
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!selectedPeer?.id || !user?.id) return;
+    const loadPresence = async () => {
+      try {
+        await axios.post('/api/users/heartbeat', { user_id: user.id });
+        const res = await axios.get(`/api/users/presence?ids=${selectedPeer.id}`);
+        setPresence((res.data || [])[0] || null);
+      } catch {}
+    };
+    loadPresence();
+    const timer = setInterval(loadPresence, 10000);
+    return () => clearInterval(timer);
+  }, [selectedPeer?.id, user?.id]);
+
+  const lastSeen = (d) => {
+    if (!d) return 'sin actividad reciente';
+    const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+    if (mins <= 1) return 'hace un momento';
+    if (mins < 60) return `hace ${mins} min`;
+    const h = Math.floor(mins / 60);
+    if (h < 24) return `hace ${h} h`;
+    return `el ${new Date(d).toLocaleDateString()}`;
+  };
 
   const filtered = users.filter(u =>
     u.username?.toLowerCase().includes(search.toLowerCase())
@@ -92,7 +117,9 @@ export default function MyLinkPage() {
               <Avatar name={selectedPeer.username} size={40} />
               <div>
                 <div style={{fontWeight:700, fontSize:16}}>{selectedPeer.username}</div>
-                <div style={{fontSize:12, color:'#475569'}}>NOX · activo recientemente</div>
+                <div style={{fontSize:12, color:'#475569'}}>
+                  {presence?.online ? 'NOX · en línea' : `NOX · última vez ${lastSeen(presence?.last_active_at)}`}
+                </div>
               </div>
             </div>
             <div style={{flex:1, overflow:'hidden'}}>

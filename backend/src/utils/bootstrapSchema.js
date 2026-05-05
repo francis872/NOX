@@ -9,7 +9,13 @@ async function bootstrapSchema() {
     `ALTER TABLE ideas
        ADD COLUMN IF NOT EXISTS media_url TEXT`,
     `ALTER TABLE ideas
+       ADD COLUMN IF NOT EXISTS media_type VARCHAR(24) DEFAULT 'text'`,
+    `ALTER TABLE ideas
        ADD COLUMN IF NOT EXISTS visibility VARCHAR(24) DEFAULT 'public'`,
+    `ALTER TABLE messages
+       ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP DEFAULT NOW()`,
+    `ALTER TABLE messages
+       ADD COLUMN IF NOT EXISTS read_at TIMESTAMP`,
     `CREATE TABLE IF NOT EXISTS vibes (
        id SERIAL PRIMARY KEY,
        author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -104,6 +110,7 @@ async function bootstrapSchema() {
      )`,
     `CREATE INDEX IF NOT EXISTS idx_ideas_author_created ON ideas(author_id, created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_messages_pair_created ON messages(sender_id, receiver_id, created_at DESC)`,
+   `CREATE INDEX IF NOT EXISTS idx_messages_read_at ON messages(read_at)`,
     `CREATE INDEX IF NOT EXISTS idx_vibes_expires ON vibes(expires_at DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at DESC)`,
     `CREATE INDEX IF NOT EXISTS idx_analytics_events_name ON analytics_events(event_name)`,

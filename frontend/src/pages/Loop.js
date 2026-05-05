@@ -45,8 +45,25 @@ const BG_ACCENTS = [
 function CreateLoopModal({ user, onClose, onCreated }) {
   const [premise, setPremise] = useState('');
   const [argument, setArgument] = useState('');
+  const [mediaType, setMediaType] = useState('text');
+  const [mediaData, setMediaData] = useState('');
+  const [preview, setPreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const fileRef = useRef(null);
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3_000_000) { setErr('Archivo demasiado grande (máx 3MB)'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setMediaData(ev.target.result);
+      setPreview(ev.target.result);
+      setErr('');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const submit = async () => {
     if (!premise.trim()) { setErr('La premisa es obligatoria'); return; }
@@ -57,6 +74,8 @@ function CreateLoopModal({ user, onClose, onCreated }) {
         premise: premise.trim(),
         argument: argument.trim() || null,
         evidence: null, conclusion: null, counterargument: null,
+        media_url: mediaData || null,
+        media_type: mediaType,
       });
       onCreated({ ...res.data, author: user.username, username: user.username });
       onClose();
@@ -71,6 +90,71 @@ function CreateLoopModal({ user, onClose, onCreated }) {
         <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', color: '#475569', fontSize: 20, cursor: 'pointer' }}>✕</button>
         <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '2px', background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 6 }}>NUEVO LOOP</div>
         <div style={{ fontSize: 12, color: '#475569', marginBottom: 20 }}>Comparte una idea que haga pensar</div>
+
+        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+          {[
+            { key:'text', label:'Texto' },
+            { key:'image', label:'Foto' },
+            { key:'video', label:'Video' },
+            { key:'boomerang', label:'Boomerang' },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setMediaType(t.key); if (t.key === 'text') { setMediaData(''); setPreview(''); } }}
+              style={{
+                flex:1,
+                padding:'8px 6px',
+                borderRadius:10,
+                border: mediaType === t.key ? '1px solid rgba(127,90,240,0.5)' : '1px solid rgba(255,255,255,0.08)',
+                background: mediaType === t.key ? 'rgba(127,90,240,0.16)' : 'rgba(255,255,255,0.03)',
+                color: mediaType === t.key ? '#e2e8f0' : '#94a3b8',
+                cursor:'pointer',
+                fontSize:12,
+                fontWeight:700,
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {mediaType !== 'text' && (
+          <div style={{ marginBottom: 14 }}>
+            {mediaType === 'video' ? (
+              <input
+                value={mediaData}
+                onChange={e => { setMediaData(e.target.value); setPreview(e.target.value); }}
+                placeholder="URL del video/boomerang"
+                style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, padding:'10px 12px', color:'#e2e8f0', fontSize:14, boxSizing:'border-box' }}
+              />
+            ) : (
+              <>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  style={{ width:'100%', padding:'11px 12px', borderRadius:10, border:'1px dashed rgba(127,90,240,0.5)', background:'rgba(127,90,240,0.08)', color:'#cbd5e1', cursor:'pointer', fontWeight:600 }}
+                >
+                  Subir archivo ({mediaType === 'image' ? 'foto/gif' : 'boomerang'})
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept={mediaType === 'image' ? 'image/*' : 'image/*,video/*'}
+                  onChange={handleFile}
+                  style={{ display:'none' }}
+                />
+              </>
+            )}
+            {preview && (
+              <div style={{ marginTop:10, borderRadius:10, overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)' }}>
+                {preview.startsWith('data:video') || preview.includes('.mp4') ? (
+                  <video src={preview} controls loop style={{ width:'100%', maxHeight:220, objectFit:'cover', display:'block' }} />
+                ) : (
+                  <img src={preview} alt="preview" style={{ width:'100%', maxHeight:220, objectFit:'cover', display:'block' }} />
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{ marginBottom: 14 }}>
           <label style={{ fontSize: 12, color: '#7f5af0', fontWeight: 700, display: 'block', marginBottom: 6 }}>PREMISA *</label>
@@ -184,6 +268,23 @@ function LoopCard({ post, index }) {
         <div style={{ fontSize: 20, fontWeight: 800, color: '#f1f5f9', marginBottom: 10, lineHeight: 1.35, letterSpacing: '-0.3px', paddingRight: 60 }}>
           {post.premise}
         </div>
+
+        {post.media_url && (
+          <div style={{ marginBottom: 10, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', maxWidth: 420 }}>
+            {(post.media_type === 'video' || post.media_type === 'boomerang' || String(post.media_url).includes('.mp4') || String(post.media_url).startsWith('data:video')) ? (
+              <video
+                src={post.media_url}
+                controls={post.media_type !== 'boomerang'}
+                autoPlay={post.media_type === 'boomerang'}
+                loop={post.media_type === 'boomerang'}
+                muted={post.media_type === 'boomerang'}
+                style={{ width:'100%', maxHeight:260, objectFit:'cover', display:'block' }}
+              />
+            ) : (
+              <img src={post.media_url} alt="loop-media" style={{ width:'100%', maxHeight:260, objectFit:'cover', display:'block' }} />
+            )}
+          </div>
+        )}
 
         {/* Argument */}
         {post.argument && (
