@@ -3,6 +3,7 @@ const router = express.Router();
 
 
 const pool = require('../db');
+const { trackEvent } = require('../utils/analytics');
 
 // Seguir usuario
 router.post('/:id/follow', async (req, res) => {
@@ -12,6 +13,16 @@ router.post('/:id/follow', async (req, res) => {
   if (follower_id == user_id) return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
   try {
     await pool.query('INSERT INTO followers (user_id, follower_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [user_id, follower_id]);
+    const actor = await pool.query('SELECT username FROM users WHERE id = $1', [follower_id]);
+    await pool.query(
+      'INSERT INTO notifications (user_id, type, message) VALUES ($1,$2,$3)',
+      [user_id, 'follow', `${actor.rows[0]?.username || 'Alguien'} empezó a seguirte`]
+    );
+    await trackEvent({
+      eventName: 'follow_created',
+      userId: Number(follower_id),
+      metadata: { target_user_id: Number(user_id) },
+    });
     res.json({ message: 'Ahora sigues a este usuario' });
   } catch (err) {
     res.status(500).json({ error: 'Error al seguir usuario' });

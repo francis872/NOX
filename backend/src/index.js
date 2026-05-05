@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const bootstrapSchema = require('./utils/bootstrapSchema');
 
 const app = express();
 app.use(cors());
@@ -29,8 +30,15 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/vibes', require('./routes/vibes'));
 app.use('/api/actions', require('./routes/actions'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/experiments', require('./routes/experiments'));
+app.use('/api/insights', require('./routes/insights'));
 
 app.get('/', (req, res) => res.json({ status: 'NOX API running' }));
+
+bootstrapSchema().catch((err) => {
+  console.error('Schema bootstrap failed:', err.message);
+});
 
 // Exportar para Vercel serverless
 module.exports = app;

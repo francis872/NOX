@@ -3,22 +3,28 @@ import axios from 'axios';
 
 export default function Insights() {
   const user = JSON.parse(localStorage.getItem('user'));
-  const [ideas, setIdeas]   = useState([]);
+  const [dashboard, setDashboard] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user?.id) return;
     setLoading(true);
-    axios.get('/api/ideas?author_id=' + user.id)
-      .then(res => setIdeas(res.data || []))
+    Promise.all([
+      axios.get('/api/insights/dashboard'),
+      axios.get(`/api/insights/user/${user.id}`),
+    ])
+      .then(([globalRes, userRes]) => {
+        setDashboard(globalRes.data || null);
+        setUserData(userRes.data || null);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line
 
-  const totalIdeas  = ideas.length;
-  const totalLikes  = ideas.reduce((a,b) => a + (b.like_count || 0), 0);
-  const totalComments = ideas.reduce((a,b) => a + (b.comment_count || 0), 0);
-  const topIdea     = ideas.sort((a,b) => (b.like_count||0) - (a.like_count||0))[0];
+  const k = dashboard?.kpis || {};
+  const me = userData?.metrics || {};
+  const topIdeas = userData?.top_ideas || [];
 
   const Stat = ({ label, value, color }) => (
     <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'18px 14px', textAlign:'center' }}>
@@ -39,44 +45,47 @@ export default function Insights() {
       {!loading && (
         <>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:20 }}>
-            <Stat label="Ideas publicadas" value={totalIdeas}   color="#7f5af0" />
-            <Stat label="Likes recibidos"  value={totalLikes}   color="#f72585" />
-            <Stat label="Comentarios"      value={totalComments} color="#2cb67d" />
+            <Stat label="DAU" value={k.dau || 0} color="#7f5af0" />
+            <Stat label="WAU" value={k.wau || 0} color="#f72585" />
+            <Stat label="MAU" value={k.mau || 0} color="#2cb67d" />
           </div>
 
-          {topIdea && (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
+            <Stat label="Activation 24h" value={`${k.activation_rate_24h || 0}%`} color="#7f5af0" />
+            <Stat label="D1 Retention" value={`${k.d1_retention || 0}%`} color="#2cb67d" />
+            <Stat label="DAU/MAU" value={`${k.dau_mau_ratio || 0}%`} color="#f72585" />
+            <Stat label="Sesión prom. 7d" value={`${k.avg_session_minutes_7d || 0}m`} color="#94a3b8" />
+          </div>
+
+          <div style={{ background:'rgba(127,90,240,0.07)', border:'1px solid rgba(127,90,240,0.2)', borderRadius:16, padding:'16px 18px', marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#7f5af0', textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:10 }}>Tu actividad semanal</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:14 }}>
+              <span style={{ fontSize:13, color:'#e2e8f0' }}>Interacciones significativas: <b>{me.meaningful_7d || 0}</b></span>
+              <span style={{ fontSize:13, color:'#e2e8f0' }}>Sesiones: <b>{me.sessions_7d || 0}</b></span>
+              <span style={{ fontSize:13, color:'#e2e8f0' }}>Minutos: <b>{me.minutes_7d || 0}</b></span>
+              <span style={{ fontSize:13, color:'#2cb67d' }}>Segmento: <b>{me.segment || 'new'}</b></span>
+            </div>
+          </div>
+
+          {topIdeas.length > 0 && (
             <div style={{ background:'rgba(127,90,240,0.07)', border:'1px solid rgba(127,90,240,0.2)', borderRadius:16, padding:'16px 18px', marginBottom:16 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'#7f5af0', textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:10 }}>Tu idea mas popular</div>
-              <div style={{ fontSize:15, color:'#e2e8f0', fontWeight:600, marginBottom:8 }}>{topIdea.title}</div>
-              <div style={{ display:'flex', gap:16 }}>
-                <span style={{ fontSize:13, color:'#f72585' }}>{topIdea.like_count || 0} likes</span>
-                <span style={{ fontSize:13, color:'#2cb67d' }}>{topIdea.comment_count || 0} comentarios</span>
-              </div>
-            </div>
-          )}
-
-          {ideas.length === 0 && (
-            <div style={{ textAlign:'center', padding:'40px 0' }}>
-              <div style={{ fontSize:42, marginBottom:12 }}>&#128202;</div>
-              <div style={{ color:'#475569' }}>Publica tu primera idea para ver estadisticas</div>
-            </div>
-          )}
-
-          {ideas.length > 0 && (
-            <>
-              <div style={{ fontSize:14, fontWeight:700, color:'#94a3b8', marginBottom:10 }}>Todas tus ideas</div>
+              <div style={{ fontSize:12, fontWeight:700, color:'#7f5af0', textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:10 }}>Top ideas</div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {ideas.map(idea => (
-                  <div key={idea.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:'12px 14px' }}>
-                    <div style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:14, color:'#e2e8f0', marginRight:12 }}>{idea.title}</div>
-                    <div style={{ display:'flex', gap:12, flexShrink:0 }}>
-                      <span style={{ fontSize:13, color:'#f72585' }}>&#10084; {idea.like_count || 0}</span>
-                      <span style={{ fontSize:13, color:'#2cb67d' }}>&#128172; {idea.comment_count || 0}</span>
-                    </div>
+                {topIdeas.map((idea) => (
+                  <div key={idea.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, padding:'10px 12px' }}>
+                    <div style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:14, color:'#e2e8f0', marginRight:12 }}>{idea.premise}</div>
+                    <span style={{ fontSize:13, color:'#f72585' }}>Score {idea.score}</span>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
+          )}
+
+          {topIdeas.length === 0 && (
+            <div style={{ textAlign:'center', padding:'40px 0' }}>
+              <div style={{ fontSize:42, marginBottom:12 }}>&#128202;</div>
+              <div style={{ color:'#475569' }}>Publica y reacciona para desbloquear mas insights</div>
+            </div>
           )}
         </>
       )}

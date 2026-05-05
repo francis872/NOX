@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { trackEvent } = require('../utils/analytics');
 
 // Get all active vibes (not expired) — also deletes expired ones
 router.get('/', async (req, res) => {
@@ -47,6 +48,11 @@ router.post('/', async (req, res) => {
        VALUES ($1, $2, $3, $4) RETURNING *`,
       [author_id, media_type || 'text', media_data || null, caption || null]
     );
+    await trackEvent({
+      eventName: 'vibe_created',
+      userId: author_id,
+      metadata: { vibe_id: result.rows[0].id, media_type: media_type || 'text' },
+    });
     res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });

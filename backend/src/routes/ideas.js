@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { trackEvent } = require('../utils/analytics');
 
 // Create new structured idea
 router.post('/', async (req, res) => {
@@ -16,6 +17,11 @@ router.post('/', async (req, res) => {
       'INSERT INTO ideas (author_id, premise, argument, evidence, conclusion, counterargument, parent_id, version, media_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
       [author_id, premise, argument, evidence, conclusion, counterargument || null, parent_id || null, version, media_url || null]
     );
+    await trackEvent({
+      eventName: 'idea_created',
+      userId: author_id,
+      metadata: { idea_id: result.rows[0].id, has_media: !!media_url },
+    });
     res.status(201).json(result.rows[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -76,6 +82,11 @@ router.post('/:id/react', async (req, res) => {
     if (idea.rows[0].author_id == user_id) return res.status(403).json({ error: 'No puedes reaccionar a tu propia idea' });
     const col = reaction === 'ignite' ? 'ignite_count' : reaction === 'expand' ? 'expand_count' : 'challenge_count';
     await pool.query(`UPDATE ideas SET ${col} = COALESCE(${col}, 0) + 1 WHERE id = $1`, [req.params.id]);
+    await trackEvent({
+      eventName: 'idea_reacted',
+      userId: user_id,
+      metadata: { idea_id: Number(req.params.id), reaction },
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });

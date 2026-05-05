@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { track } from '../utils/analytics';
 import './auth.css';
 
 function Login() {
@@ -14,12 +15,15 @@ function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    track('login_started');
     try {
       const res = await axios.post('/api/auth/login', { email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
+      track('login_completed', { user_id: res.data.user?.id });
       window.location.replace('/feed');
     } catch (err) {
+      track('login_failed');
       setError(err.response?.data?.error || 'Credenciales incorrectas');
     } finally {
       setLoading(false);

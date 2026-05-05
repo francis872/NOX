@@ -5,6 +5,7 @@ const router = express.Router();
 const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { trackEvent } = require('../utils/analytics');
 
 // Registro de usuario
 router.post('/register', async (req, res) => {
@@ -18,6 +19,11 @@ router.post('/register', async (req, res) => {
       'INSERT INTO users (username, email, password, bio, interests, age, origin) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, username, email',
       [username, email, hashedPassword, bio || '', interests || [], age || null, origin || '']
     );
+    await trackEvent({
+      eventName: 'signup_completed',
+      userId: result.rows[0].id,
+      metadata: { source: 'register_form' },
+    });
     res.status(201).json({ user: result.rows[0] });
   } catch (err) {
     if (err.code === '23505') {
@@ -43,7 +49,12 @@ router.post('/login', async (req, res) => {
     if (!valid) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
-    const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, username: user.username, is_admin: !!user.is_admin, role: user.role || 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    await trackEvent({
+      eventName: 'login_success',
+      userId: user.id,
+      metadata: { source: 'login_form' },
+    });
     res.json({ token, user: { id: user.id, username: user.username, email: user.email } });
   } catch (err) {
     res.status(500).json({ error: 'Error al iniciar sesión' });

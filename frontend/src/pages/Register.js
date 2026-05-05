@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { track } from '../utils/analytics';
 import './auth.css';
 
 const STEPS = [
@@ -50,9 +51,14 @@ function Register() {
     if (validationError) { setError(validationError); return; }
     setError('');
 
-    if (step < STEPS.length - 1) { setStep(s => s + 1); return; }
+    if (step < STEPS.length - 1) {
+      track('onboarding_step_completed', { step: STEPS[step].key });
+      setStep(s => s + 1);
+      return;
+    }
 
     setLoading(true);
+    track('signup_started');
     try {
       const { confirm, birthdate, ...rest } = form;
       const payload = {
@@ -61,6 +67,8 @@ function Register() {
         interests: form.interests.split(',').map(i => i.trim()).filter(Boolean),
       };
       await axios.post('/api/auth/register', payload);
+      track('signup_completed');
+      track('onboarding_completed');
       navigate('/login');
     } catch (err) {
       if (err.response) {

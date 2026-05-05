@@ -60,6 +60,7 @@ import ExperienciasConectadas from './pages/ExperienciasConectadas';
 import PreferenciasAnuncios from './pages/PreferenciasAnuncios';
 import ArchivosDescargas from './pages/ArchivosDescargas';
 import PedidosPagos from './pages/PedidosPagos';
+import { track } from './utils/analytics';
 import './darklab.css';
 
 export default function App() {
@@ -74,6 +75,10 @@ export default function App() {
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 2600);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    track('app_open', { ts: Date.now() });
   }, []);
 
   // Sincronizar user si otra pestaña o componente actualiza localStorage
