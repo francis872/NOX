@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../assets/noxlogo.png';
 
 const ITEMS = [
+  { icon: '⚙️', label: 'Ajustes',         path: '/settings' },
   { icon: '📰', label: 'Feed',            path: '/feed' },
   { icon: '⚡', label: 'Actividad',       path: '/actividad' },
   { icon: '🔔', label: 'Notificaciones',  path: '/notificaciones' },
@@ -15,7 +16,9 @@ const ITEMS = [
   { icon: '🔭', label: 'Explorar',        path: '/explore' },
   { icon: '💬', label: 'Mensajes',        path: '/mylink' },
   { icon: '⏱️', label: 'Tiempo',          path: '/tiempo' },
-  { icon: '�', label: 'Loop',           path: '/loop' },  { icon: '📸', label: 'Cámara',         path: '/camara' },  { icon: '�🔗', label: 'Cuentas',         path: '/cuentas-silenciadas' },
+  { icon: '🔁', label: 'Loop',            path: '/loop' },
+  { icon: '📸', label: 'Cámara',          path: '/camara' },
+  { icon: '🔗', label: 'Cuentas',         path: '/cuentas-silenciadas' },
   { icon: '🎛️', label: 'Preferencias',    path: '/preferencias-contenido' },
   { icon: '💎', label: 'Suscripciones',   path: '/suscripciones' },
   { icon: '♿', label: 'Accesibilidad',   path: '/accesibilidad' },
@@ -48,7 +51,7 @@ function Navbar() {
       <button
         className={`nox-fab${open ? ' nox-fab--open' : ''}`}
         onClick={() => setOpen(o => !o)}
-        aria-label="Menú"
+        aria-label="MenÃº"
       >
         <img src={logo} alt="NOX" className="nox-fab__logo" />
       </button>

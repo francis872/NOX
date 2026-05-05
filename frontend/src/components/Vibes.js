@@ -1,4 +1,4 @@
-// Vibes.js — Horizontal strip of 24h ephemeral stories
+﻿// Vibes.js â€” Horizontal strip of 24h ephemeral stories with carousel viewer
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 
@@ -10,8 +10,35 @@ const GRADIENT_BG = [
   'linear-gradient(135deg,#2cb67d,#4cc9f0)',
 ];
 
-/* ─── Full-screen viewer ────────────────────────── */
-function VibeViewer({ vibe, onClose, onDelete, currentUser }) {
+/* â”€â”€â”€ Full-screen carousel viewer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function VibeViewer({ vibes, startIndex = 0, onClose, onDelete, currentUser }) {
+  const [idx, setIdx] = useState(startIndex);
+  const [progress, setProgress] = useState(0);
+  const timerRef = useRef(null);
+  const vibe = vibes[idx];
+
+  const next = () => {
+    if (idx < vibes.length - 1) { setIdx(i => i + 1); setProgress(0); }
+    else onClose();
+  };
+  const prev = () => {
+    if (idx > 0) { setIdx(i => i - 1); setProgress(0); }
+  };
+
+  // Auto-advance every 5s
+  useEffect(() => {
+    setProgress(0);
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setProgress(p => {
+        if (p >= 100) { next(); return 0; }
+        return p + 2;
+      });
+    }, 100);
+    return () => clearInterval(timerRef.current);
+  }, [idx]);
+
+  if (!vibe) return null;
   const isImage = vibe.media_type === 'image' && vibe.media_data;
   const isVideo = vibe.media_type === 'video' && vibe.media_data;
 
@@ -19,34 +46,55 @@ function VibeViewer({ vibe, onClose, onDelete, currentUser }) {
     <div
       onClick={onClose}
       style={{
-        position: 'fixed', inset: 0, zIndex: 9500,
+        position: 'fixed', inset: 0, zIndex: 10100,
         background: '#000',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >
-      <button onClick={onClose} style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', zIndex: 1 }}>✕</button>
-      {currentUser && vibe.author_id === currentUser.id && (
-        <button onClick={e => { e.stopPropagation(); onDelete(vibe.id); }} style={{ position: 'absolute', top: 18, left: 18, background: 'rgba(239,68,68,0.85)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, padding: '6px 12px', cursor: 'pointer', zIndex: 1 }}>🗑 Eliminar</button>
-      )}
-
-      {/* Progress bar */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.2)' }}>
-        <div style={{ height: '100%', background: '#7f5af0', animation: 'vibeProgress 5s linear forwards' }} />
+      {/* Progress bars */}
+      <div style={{ position: 'absolute', top: 10, left: 12, right: 12, zIndex: 2, display: 'flex', gap: 4 }}>
+        {vibes.map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.25)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 2,
+              background: '#fff',
+              width: i < idx ? '100%' : i === idx ? `${progress}%` : '0%',
+              transition: i === idx ? 'width 0.1s linear' : 'none',
+            }} />
+          </div>
+        ))}
       </div>
 
       {/* Author */}
-      <div style={{ position: 'absolute', top: 22, left: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ position: 'absolute', top: 26, left: 16, display: 'flex', alignItems: 'center', gap: 10, zIndex: 2 }}>
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: GRADIENT_BG[vibe.id % 5], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>
           {vibe.username?.[0] || '?'}
         </div>
         <div>
           <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>{vibe.username}</div>
-          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11 }}>Vibe · expira pronto</div>
+          <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11 }}>{idx + 1}/{vibes.length} Â· Vibe</div>
         </div>
       </div>
 
+      {/* Close button */}
+      <button onClick={onClose} style={{ position: 'absolute', top: 22, right: 18, background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', zIndex: 2, borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>âœ•</button>
+
+      {/* Delete button â€” bottom left, away from nav */}
+      {currentUser && vibe.author_id === currentUser.id && (
+        <button
+          onClick={e => { e.stopPropagation(); onDelete(vibe.id); }}
+          style={{ position: 'absolute', bottom: 90, left: 20, background: 'rgba(239,68,68,0.9)', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 700, padding: '8px 18px', cursor: 'pointer', zIndex: 2 }}
+        >
+          ðŸ—‘ Eliminar
+        </button>
+      )}
+
+      {/* Tap zones for prev/next */}
+      <div onClick={e => { e.stopPropagation(); prev(); }} style={{ position: 'absolute', left: 0, top: 0, width: '40%', height: '100%', zIndex: 1, cursor: idx > 0 ? 'pointer' : 'default' }} />
+      <div onClick={e => { e.stopPropagation(); next(); }} style={{ position: 'absolute', right: 0, top: 0, width: '40%', height: '100%', zIndex: 1, cursor: 'pointer' }} />
+
       {/* Media */}
-      <div style={{ width: '100%', maxWidth: 480, maxHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => e.stopPropagation()}>
+      <div style={{ width: '100%', maxWidth: 480, maxHeight: '90vh', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }} onClick={e => e.stopPropagation()}>
         {isImage && (
           <img src={vibe.media_data} alt="vibe" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 12, objectFit: 'contain' }} />
         )}
@@ -54,24 +102,22 @@ function VibeViewer({ vibe, onClose, onDelete, currentUser }) {
           <video src={vibe.media_data} controls autoPlay style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 12 }} />
         )}
         {!isImage && !isVideo && (
-          <div style={{ width: '100%', minHeight: 300, background: GRADIENT_BG[vibe.id % 5], borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-            <p style={{ fontSize: 22, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.5 }}>{vibe.caption || '✨'}</p>
+          <div style={{ width: '90vw', maxWidth: 480, minHeight: 300, background: GRADIENT_BG[vibe.id % 5], borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+            <p style={{ fontSize: 22, fontWeight: 700, color: '#fff', textAlign: 'center', lineHeight: 1.5 }}>{vibe.caption || 'âœ¨'}</p>
           </div>
         )}
       </div>
 
       {vibe.caption && (isImage || isVideo) && (
-        <div style={{ position: 'absolute', bottom: 32, left: 0, right: 0, textAlign: 'center', color: '#fff', fontSize: 15, padding: '0 24px', textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}>
+        <div style={{ position: 'absolute', bottom: 40, left: 0, right: 0, textAlign: 'center', color: '#fff', fontSize: 15, padding: '0 24px', textShadow: '0 1px 6px rgba(0,0,0,0.7)', zIndex: 2 }}>
           {vibe.caption}
         </div>
       )}
-
-      <style>{`@keyframes vibeProgress { from{width:0} to{width:100%} }`}</style>
     </div>
   );
 }
 
-/* ─── Create Vibe modal ─────────────────────────── */
+/* â”€â”€â”€ Create Vibe modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function CreateVibeModal({ user, onClose, onCreated }) {
   const [mediaType, setMediaType] = useState('text');
   const [mediaData, setMediaData] = useState('');
@@ -84,7 +130,7 @@ function CreateVibeModal({ user, onClose, onCreated }) {
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2_500_000) { setErr('Imagen demasiado grande (máx 2.5 MB)'); return; }
+    if (file.size > 2_500_000) { setErr('Imagen demasiado grande (mÃ¡x 2.5 MB)'); return; }
     setErr('');
     const reader = new FileReader();
     reader.onload = ev => {
@@ -125,26 +171,25 @@ function CreateVibeModal({ user, onClose, onCreated }) {
   });
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,14,0.9)', backdropFilter: 'blur(10px)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,14,0.9)', backdropFilter: 'blur(10px)', zIndex: 10050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
       <div style={{ background: '#13131f', border: '1px solid rgba(127,90,240,0.3)', borderRadius: 18, padding: '24px 20px', maxWidth: 420, width: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', color: '#475569', fontSize: 20, cursor: 'pointer' }}>✕</button>
-        <h3 style={{ marginBottom: 18, fontSize: 18, color: '#e2e8f0', marginTop: 0 }}>✨ Nuevo Vibe</h3>
+        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', color: '#475569', fontSize: 20, cursor: 'pointer' }}>âœ•</button>
+        <h3 style={{ marginBottom: 18, fontSize: 18, color: '#e2e8f0', marginTop: 0 }}>âœ¨ Nuevo Vibe</h3>
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Desaparece en 24 horas</div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: 18 }}>
-          <button style={tabStyle('text')} onClick={() => { setMediaType('text'); setMediaData(''); setPreview(null); }}>✍️ Texto</button>
-          <button style={tabStyle('image')} onClick={() => { setMediaType('image'); setMediaData(''); setPreview(null); }}>📷 Foto</button>
-          <button style={tabStyle('video')} onClick={() => { setMediaType('video'); setMediaData(''); setPreview(null); }}>🎥 Video</button>
+          <button style={tabStyle('text')} onClick={() => { setMediaType('text'); setMediaData(''); setPreview(null); }}>âœï¸ Texto</button>
+          <button style={tabStyle('image')} onClick={() => { setMediaType('image'); setMediaData(''); setPreview(null); }}>ðŸ“· Foto</button>
+          <button style={tabStyle('video')} onClick={() => { setMediaType('video'); setMediaData(''); setPreview(null); }}>ðŸŽ¥ Video</button>
         </div>
 
-        {/* Inputs */}
         {mediaType === 'text' && (
           <div style={{ background: GRADIENT_BG[user?.id % 5 || 0], borderRadius: 12, padding: '20px 16px', marginBottom: 14, minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <textarea
               value={caption}
               onChange={e => setCaption(e.target.value)}
-              placeholder="¿Qué vibra hoy?"
+              placeholder="Â¿QuÃ© vibra hoy?"
               rows={4}
               style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: 18, fontWeight: 700, textAlign: 'center', resize: 'none', fontFamily: 'inherit', lineHeight: 1.5 }}
             />
@@ -159,7 +204,7 @@ function CreateVibeModal({ user, onClose, onCreated }) {
             >
               {preview
                 ? <img src={preview} alt="preview" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, objectFit: 'cover' }} />
-                : <div style={{ color: '#475569' }}><div style={{ fontSize: 36, marginBottom: 8 }}>📷</div><div style={{ fontSize: 13 }}>Toca para subir foto (máx 2.5 MB)</div></div>
+                : <div style={{ color: '#475569' }}><div style={{ fontSize: 36, marginBottom: 8 }}>ðŸ“·</div><div style={{ fontSize: 13 }}>Toca para subir foto (mÃ¡x 2.5 MB)</div></div>
               }
             </div>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
@@ -192,10 +237,10 @@ function CreateVibeModal({ user, onClose, onCreated }) {
   );
 }
 
-/* ─── Main Vibes strip ──────────────────────────── */
+/* â”€â”€â”€ Main Vibes strip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function Vibes({ user }) {
   const [vibes, setVibes] = useState([]);
-  const [viewing, setViewing] = useState(null);
+  const [viewing, setViewing] = useState(null); // { vibes: [], index: 0 }
   const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
@@ -206,24 +251,42 @@ export default function Vibes({ user }) {
     setVibes(prev => [{ ...vibe, username: user.username }, ...prev]);
   };
 
+  // Optimistic delete
   const handleDelete = async (id) => {
+    setVibes(prev => prev.filter(v => v.id !== id));
+    setViewing(null);
     try {
       await axios.delete(`/api/vibes/${id}`);
-      setVibes(prev => prev.filter(v => v.id !== id));
-      setViewing(null);
-    } catch {}
+    } catch {
+      // Reload on failure
+      axios.get('/api/vibes').then(res => setVibes(res.data)).catch(() => {});
+    }
   };
 
-  // Group: own vibe first, then others (unique authors)
+  // Group vibes by author_id (each author can have multiple)
+  const grouped = {};
+  vibes.forEach(v => {
+    if (!grouped[v.author_id]) grouped[v.author_id] = [];
+    grouped[v.author_id].push(v);
+  });
+
+  // Ordered: own vibes first, then others (unique authors)
+  const authorOrder = [];
   const seen = new Set();
-  const ordered = [
+  [
     ...(vibes.filter(v => v.author_id === user?.id)),
     ...(vibes.filter(v => v.author_id !== user?.id)),
-  ].filter(v => {
-    if (seen.has(v.author_id)) return false;
-    seen.add(v.author_id);
-    return true;
+  ].forEach(v => {
+    if (!seen.has(v.author_id)) {
+      seen.add(v.author_id);
+      authorOrder.push(v.author_id);
+    }
   });
+
+  const openVibes = (authorId) => {
+    const authorVibes = grouped[authorId] || [];
+    if (authorVibes.length > 0) setViewing({ vibes: authorVibes, index: 0 });
+  };
 
   return (
     <>
@@ -247,26 +310,46 @@ export default function Vibes({ user }) {
           <span style={{ fontSize: 10, color: '#475569', whiteSpace: 'nowrap' }}>Tu vibe</span>
         </button>
 
-        {/* Vibe circles */}
-        {ordered.map(vibe => (
-          <button key={vibe.author_id} onClick={() => setViewing(vibe)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, padding: 0 }}>
-            <div style={{ width: 62, height: 62, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg,#7f5af0,#2cb67d,#f72585)' }}>
-              <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: vibe.media_type === 'image' && vibe.media_data ? `url(${vibe.media_data}) center/cover` : GRADIENT_BG[vibe.id % 5], border: '2px solid #0e0e1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>
-                {!(vibe.media_type === 'image' && vibe.media_data) && (vibe.username?.[0] || '?')}
+        {/* Vibe circles â€” one per author */}
+        {authorOrder.map(authorId => {
+          const authorVibes = grouped[authorId] || [];
+          const vibe = authorVibes[0];
+          const count = authorVibes.length;
+          return (
+            <button key={authorId} onClick={() => openVibes(authorId)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, padding: 0 }}>
+              <div style={{ position: 'relative', width: 62, height: 62 }}>
+                <div style={{ width: 62, height: 62, borderRadius: '50%', padding: 2, background: 'linear-gradient(135deg,#7f5af0,#2cb67d,#f72585)' }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: vibe.media_type === 'image' && vibe.media_data ? `url(${vibe.media_data}) center/cover` : GRADIENT_BG[vibe.id % 5], border: '2px solid #0e0e1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>
+                    {!(vibe.media_type === 'image' && vibe.media_data) && (vibe.username?.[0] || '?')}
+                  </div>
+                </div>
+                {count > 1 && (
+                  <div style={{ position: 'absolute', top: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#7f5af0', border: '2px solid #0e0e1a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#fff', fontWeight: 700 }}>
+                    {count}
+                  </div>
+                )}
               </div>
-            </div>
-            <span style={{ fontSize: 10, color: '#94a3b8', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>{vibe.username}</span>
-          </button>
-        ))}
+              <span style={{ fontSize: 10, color: '#94a3b8', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>{vibe.username}</span>
+            </button>
+          );
+        })}
 
-        {ordered.length === 0 && (
+        {authorOrder.length === 0 && (
           <div style={{ display: 'flex', alignItems: 'center', color: '#334155', fontSize: 13, padding: '10px 0' }}>
-            Sé el primero en publicar un Vibe
+            SÃ© el primero en publicar un Vibe
           </div>
         )}
       </div>
 
-      {viewing && <VibeViewer vibe={viewing} onClose={() => setViewing(null)} onDelete={handleDelete} currentUser={user} />}
+      {viewing && (
+        <VibeViewer
+          vibes={viewing.vibes}
+          startIndex={viewing.index}
+          onClose={() => setViewing(null)}
+          onDelete={handleDelete}
+          currentUser={user}
+        />
+      )}
       {showCreate && <CreateVibeModal user={user} onClose={() => setShowCreate(false)} onCreated={onCreated} />}
     </>
   );

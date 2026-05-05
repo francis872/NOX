@@ -41,6 +41,72 @@ const BG_ACCENTS = [
   'radial-gradient(ellipse at 85% 50%, rgba(127,90,240,0.15) 0%, transparent 60%), radial-gradient(ellipse at 20% 30%, rgba(244,162,97,0.08) 0%, transparent 60%)',
 ];
 
+/* ─── Create Loop Modal ─────────────────────── */
+function CreateLoopModal({ user, onClose, onCreated }) {
+  const [premise, setPremise] = useState('');
+  const [argument, setArgument] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+
+  const submit = async () => {
+    if (!premise.trim()) { setErr('La premisa es obligatoria'); return; }
+    setLoading(true); setErr('');
+    try {
+      const res = await axios.post('/api/ideas', {
+        author_id: user.id,
+        premise: premise.trim(),
+        argument: argument.trim() || null,
+        evidence: null, conclusion: null, counterargument: null,
+      });
+      onCreated({ ...res.data, author: user.username, username: user.username });
+      onClose();
+    } catch (e) {
+      setErr(e.response?.data?.error || 'Error al publicar Loop');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(4,4,14,0.92)', backdropFilter: 'blur(12px)', zIndex: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
+      <div style={{ background: '#13131f', border: '1px solid rgba(127,90,240,0.35)', borderRadius: 20, padding: '28px 22px', maxWidth: 440, width: '100%', position: 'relative' }} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', color: '#475569', fontSize: 20, cursor: 'pointer' }}>✕</button>
+        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '2px', background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 6 }}>NUEVO LOOP</div>
+        <div style={{ fontSize: 12, color: '#475569', marginBottom: 20 }}>Comparte una idea que haga pensar</div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 12, color: '#7f5af0', fontWeight: 700, display: 'block', marginBottom: 6 }}>PREMISA *</label>
+          <textarea
+            value={premise}
+            onChange={e => setPremise(e.target.value)}
+            placeholder="Tu idea en una frase poderosa..."
+            rows={3}
+            style={{ width: '100%', background: 'rgba(127,90,240,0.07)', border: '1px solid rgba(127,90,240,0.3)', borderRadius: 12, padding: '12px 14px', color: '#e2e8f0', fontSize: 15, fontWeight: 600, resize: 'vertical', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 12, color: '#64748b', fontWeight: 700, display: 'block', marginBottom: 6 }}>ARGUMENTO (opcional)</label>
+          <textarea
+            value={argument}
+            onChange={e => setArgument(e.target.value)}
+            placeholder="Desarrolla tu razonamiento..."
+            rows={4}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 12, padding: '12px 14px', color: '#cbd5e1', fontSize: 14, resize: 'vertical', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {err && <div style={{ color: '#ff6b6b', fontSize: 13, marginBottom: 12 }}>{err}</div>}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#94a3b8', fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={submit} disabled={loading} style={{ flex: 2, padding: '12px', background: loading ? '#334155' : 'linear-gradient(135deg,#7f5af0,#2cb67d)', border: 'none', borderRadius: 12, color: '#fff', fontWeight: 700, fontSize: 15, cursor: loading ? 'not-allowed' : 'pointer' }}>
+            {loading ? 'Publicando...' : '⚡ Publicar Loop'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoopCard({ post, index }) {
   const [reacted, setReacted] = useState(null);
   const [counts, setCounts] = useState({
@@ -133,14 +199,24 @@ function LoopCard({ post, index }) {
 export default function Loop() {
   const [loops, setLoops] = useState([]);
   const [current, setCurrent] = useState(0);
+  const [showCreate, setShowCreate] = useState(false);
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
+    // Load ALL ideas (no user_id filter) to see everyone's loops
     axios.get('/api/ideas')
       .then(res => setLoops(res.data?.length > 0 ? res.data : MOCK))
       .catch(() => setLoops(MOCK));
   }, []);
+
+  const handleCreated = (newLoop) => {
+    setLoops(prev => [newLoop, ...prev]);
+    setCurrent(0);
+    // Scroll to top
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  };
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
@@ -172,7 +248,16 @@ export default function Loop() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           pointerEvents: 'none',
         }}>LOOP</span>
+        {/* Create Loop button */}
+        <button
+          onClick={() => setShowCreate(true)}
+          style={{ position:'absolute', right:16, top:12, background:'linear-gradient(135deg,#7f5af0,#2cb67d)', border:'none', borderRadius:20, padding:'6px 16px', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', pointerEvents:'auto', letterSpacing:'0.5px' }}
+        >
+          + Crear
+        </button>
       </div>
+
+      {showCreate && user && <CreateLoopModal user={user} onClose={() => setShowCreate(false)} onCreated={handleCreated} />}
 
       {/* Scroll feed */}
       <div

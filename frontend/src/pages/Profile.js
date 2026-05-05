@@ -179,7 +179,7 @@ function Profile() {
               >
                 {following ? 'Siguiendo ✓' : 'Seguir'}
               </button>
-              <button style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}>Mensaje</button>
+              <button onClick={() => navigate('/mylink')} style={{flex:1, padding:'9px 0', background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.13)', borderRadius:10, color:'#e2e8f0', fontWeight:600, cursor:'pointer', fontSize:14}}>Mensaje</button>
             </>
           )}
         </div>
