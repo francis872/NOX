@@ -4,6 +4,7 @@ const router = express.Router();
 
 const pool = require('../db');
 const { trackEvent } = require('../utils/analytics');
+const { recordEdge } = require('../utils/graph');
 
 // Seguir usuario
 router.post('/:id/follow', async (req, res) => {
@@ -23,6 +24,11 @@ router.post('/:id/follow', async (req, res) => {
       userId: Number(follower_id),
       metadata: { target_user_id: Number(user_id) },
     });
+    await recordEdge(
+      { type: 'user', entityId: follower_id, label: actor.rows[0]?.username || '' },
+      { type: 'user', entityId: user_id, label: '' },
+      'follows',
+    );
     res.json({ message: 'Ahora sigues a este usuario' });
   } catch (err) {
     res.status(500).json({ error: 'Error al seguir usuario' });

@@ -38,8 +38,12 @@ export default function StructuredIdeaForm({ onSubmit, initialData }) {
   const [fields, setFields] = useState(initialData || initialState);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [mediaMode, setMediaMode] = useState('none'); // 'none' | 'image' | 'video'
-  const [imagePreview, setImagePreview] = useState(null);
+  const [mediaMode, setMediaMode] = useState(
+    initialData?.media_url ? 'image' : 'none'
+  );
+  const [imagePreview, setImagePreview] = useState(
+    initialData?.media_url || null
+  );
   const fileRef = useRef();
 
   const handleChange = e => {
@@ -107,8 +111,15 @@ export default function StructuredIdeaForm({ onSubmit, initialData }) {
               type="button"
               onClick={() => {
                 setMediaMode(m);
-                setFields(f => ({ ...f, media_url: '' }));
-                setImagePreview(null);
+                // Only clear media_url when switching AWAY from image/camera source
+                if (m === 'none') {
+                  setFields(f => ({ ...f, media_url: '' }));
+                  setImagePreview(null);
+                }
+                if (m === 'video') {
+                  setFields(f => ({ ...f, media_url: '' }));
+                  setImagePreview(null);
+                }
               }}
               style={{
                 padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,

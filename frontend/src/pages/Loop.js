@@ -42,7 +42,7 @@ const BG_ACCENTS = [
 ];
 
 /* ─── Create Loop Modal ─────────────────────── */
-function CreateLoopModal({ user, onClose, onCreated, initialMedia }) {
+function CreateLoopModal({ user, onClose, onCreated, initialMedia, onOpenCamera }) {
   const [premise, setPremise] = useState('');
   const [argument, setArgument] = useState('');
   const [mediaType, setMediaType] = useState('text');
@@ -107,7 +107,15 @@ function CreateLoopModal({ user, onClose, onCreated, initialMedia }) {
           ].map((t) => (
             <button
               key={t.key}
-              onClick={() => { setMediaType(t.key); if (t.key === 'text') { setMediaData(''); setPreview(''); } }}
+              onClick={() => {
+                setMediaType(t.key);
+                if (t.key === 'text') {
+                  setMediaData('');
+                  setPreview('');
+                  return;
+                }
+                onOpenCamera?.(t.key);
+              }}
               style={{
                 flex:1,
                 padding:'8px 6px',
@@ -393,6 +401,7 @@ export default function Loop() {
           }}
           onCreated={handleCreated}
           initialMedia={initialMedia}
+          onOpenCamera={(mode) => navigate('/camara', { state: { target: 'loop', preferredMode: mode } })}
         />
       )}
 

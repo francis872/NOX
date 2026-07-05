@@ -215,6 +215,15 @@ export default function Camera() {
       });
       return;
     }
+    if (navTarget === 'profile') {
+      const profileId = location.state?.profileId || user?.id;
+      navigate(`/profile/${profileId}`, {
+        state: {
+          profileAvatarToAttach: snapshot,
+        },
+      });
+      return;
+    }
     navigate('/feed', { state: { photoToAttach: snapshot } });
   };
 

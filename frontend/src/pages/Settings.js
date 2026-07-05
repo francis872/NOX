@@ -1,157 +1,289 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { MdOutlineArrowBack, MdOutlineCheckCircle } from 'react-icons/md';
 
 const PREFS_KEY = 'nox_settings_prefs';
-function loadPrefs() { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch { return {}; } }
-function savePrefs(p) { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
 
-function SectionHeader({ title }) {
-  return <div style={{ padding: '22px 16px 6px', fontSize: 11, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '1.2px' }}>{title}</div>;
-}
+// Photo Editor Component
+function PhotoEditor({ user, onSaved }) {
+  const [avatar, setAvatar] = useState(user?.avatar_url || '');
+  const [preview, setPreview] = useState(user?.avatar_url || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const fileRef = useRef();
 
-function NavItem({ label, sub, icon, path, danger, onClick }) {
-  const navigate = useNavigate();
-  const handle = () => { if (onClick) onClick(); else if (path) navigate(path); };
+  const handleFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 3_000_000) { setError('Máximo 3 MB'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      setPreview(ev.target.result);
+      setAvatar(ev.target.result);
+      setError('');
+    };
+    reader.readAsDataURL(f);
+  };
+
+  const save = async () => {
+    setLoading(true);
+    try {
+      await axios.put(`/api/users/${user.id}`, { avatar_url: avatar }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const updated = { ...user, avatar_url: avatar };
+      localStorage.setItem('user', JSON.stringify(updated));
+      onSaved(updated);
+      setError('');
+    } catch (err) {
+      setError('Error al guardar foto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <button onClick={handle} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-      {icon && <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>}
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, color: danger ? '#ef4444' : '#e2e8f0', fontWeight: 500 }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{sub}</div>}
+    <div style={{ display: 'grid', gap: 20 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 120, height: 120, borderRadius: '50%', margin: '0 auto 16px', overflow: 'hidden', background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid rgba(255,255,255,0.1)' }}>
+          {preview ? <img src={preview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 50, color: '#fff' }}>{user?.username?.[0]}</span>}
+        </div>
+        <button onClick={() => fileRef.current?.click()} style={{ padding: '10px 18px', borderRadius: 12, background: 'rgba(127,90,240,0.15)', border: '1px solid rgba(127,90,240,0.3)', color: '#c4b5fd', fontWeight: 700, cursor: 'pointer', fontSize: 14, minHeight: 40 }}>
+          📷 Cambiar foto
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
       </div>
-      {!danger && <span style={{ color: '#334155', fontSize: 18 }}>&#8250;</span>}
-    </button>
-  );
-}
-
-function ToggleItem({ label, sub, icon, prefKey, prefs, setPrefs }) {
-  const val = !!prefs[prefKey];
-  const toggle = () => { const next = { ...prefs, [prefKey]: !val }; setPrefs(next); savePrefs(next); };
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-      {icon && <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>}
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, color: '#e2e8f0', fontWeight: 500 }}>{label}</div>
-        {sub && <div style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>{sub}</div>}
-      </div>
-      <div onClick={toggle} style={{ width: 46, height: 26, borderRadius: 13, background: val ? 'linear-gradient(135deg,#7f5af0,#2cb67d)' : 'rgba(255,255,255,0.1)', cursor: 'pointer', position: 'relative', transition: 'background 0.25s', flexShrink: 0 }}>
-        <div style={{ position: 'absolute', top: 3, left: val ? 23 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.25s', boxShadow: '0 1px 4px rgba(0,0,0,0.4)' }} />
-      </div>
+      {error && <div style={{ color: '#ef4444', fontSize: 13, textAlign: 'center' }}>{error}</div>}
+      {preview !== user?.avatar_url && (
+        <button onClick={save} disabled={loading} style={{ padding: '12px 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, minHeight: 48 }}>
+          {loading ? 'Guardando...' : '✓ Guardar cambios'}
+        </button>
+      )}
     </div>
   );
 }
 
-function SelectItem({ label, icon, prefKey, options, prefs, setPrefs }) {
-  const val = prefs[prefKey] || options[0].value;
-  const change = (e) => { const next = { ...prefs, [prefKey]: e.target.value }; setPrefs(next); savePrefs(next); };
+// Personal Data Editor
+function PersonalDataEditor({ user, onSaved }) {
+  const [form, setForm] = useState({
+    full_name: user?.full_name || '',
+    email: user?.email || '',
+    origin: user?.origin || '',
+    bio: user?.bio || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const save = async () => {
+    if (!form.full_name.trim()) { setError('Nombre completo requerido'); return; }
+    setLoading(true);
+    try {
+      await axios.put(`/api/users/${user.id}`, form, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      const updated = { ...user, ...form };
+      localStorage.setItem('user', JSON.stringify(updated));
+      onSaved(updated);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError('Error al guardar datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-      {icon && <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{icon}</span>}
-      <div style={{ flex: 1, fontSize: 15, color: '#e2e8f0', fontWeight: 500 }}>{label}</div>
-      <select value={val} onChange={change} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#e2e8f0', padding: '5px 10px', fontSize: 13, cursor: 'pointer' }}>
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Nombre completo</label>
+        <input type="text" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(127,90,240,0.2)', color: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Email (no se puede cambiar)</label>
+        <input type="email" value={form.email} disabled style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: '#475569', fontSize: 14, cursor: 'not-allowed', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Ubicación</label>
+        <input type="text" value={form.origin} onChange={e => setForm(f => ({ ...f, origin: e.target.value }))} placeholder="Madrid, España" style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(127,90,240,0.2)', color: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Biografía</label>
+        <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} placeholder="Cuéntanos sobre ti..." rows={3} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(127,90,240,0.2)', color: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', resize: 'vertical' }} />
+      </div>
+      {error && <div style={{ color: '#ef4444', fontSize: 13 }}>{error}</div>}
+      {success && <div style={{ color: '#22c55e', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><MdOutlineCheckCircle size={16} /> Cambios guardados</div>}
+      <button onClick={save} disabled={loading} style={{ padding: '12px 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, minHeight: 48 }}>
+        {loading ? 'Guardando...' : '✓ Guardar cambios'}
+      </button>
     </div>
   );
 }
 
+// Password Changer
+function PasswordChanger({ user }) {
+  const [form, setForm] = useState({ current: '', new: '', confirm: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const save = async () => {
+    if (!form.current || !form.new) { setError('Faltan campos'); return; }
+    if (form.new.length < 8) { setError('Nueva contraseña: mínimo 8 caracteres'); return; }
+    if (form.new !== form.confirm) { setError('Las contraseñas no coinciden'); return; }
+    setLoading(true);
+    try {
+      await axios.patch(`/api/users/${user.id}/password`, { current_password: form.current, new_password: form.new }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setSuccess(true);
+      setForm({ current: '', new: '', confirm: '' });
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al cambiar contraseña');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)', color: '#fbbf24', fontSize: 13 }}>
+        ⚠️ Por seguridad, confirma tu contraseña actual para establecer una nueva
+      </div>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Contraseña actual</label>
+        <input type="password" value={form.current} onChange={e => setForm(f => ({ ...f, current: e.target.value }))} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(127,90,240,0.2)', color: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Nueva contraseña (mín. 8 caracteres, número y mayúscula)</label>
+        <input type="password" value={form.new} onChange={e => setForm(f => ({ ...f, new: e.target.value }))} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(127,90,240,0.2)', color: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 6 }}>Confirmar nueva contraseña</label>
+        <input type="password" value={form.confirm} onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))} style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(127,90,240,0.2)', color: '#f8fafc', fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+      </div>
+      {error && <div style={{ color: '#ef4444', fontSize: 13 }}>{error}</div>}
+      {success && <div style={{ color: '#22c55e', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><MdOutlineCheckCircle size={16} /> Contraseña actualizada</div>}
+      <button onClick={save} disabled={loading} style={{ padding: '12px 18px', borderRadius: 12, background: 'linear-gradient(135deg,#7f5af0,#2cb67d)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, minHeight: 48 }}>
+        {loading ? 'Actualizando...' : '✓ Cambiar contraseña'}
+      </button>
+    </div>
+  );
+}
+
+// Privacy Settings
+function PrivacySettings({ user, onSaved }) {
+  const [isPrivate, setIsPrivate] = useState(user?.is_private ?? false);
+  const [loading, setLoading] = useState(false);
+
+  const togglePrivacy = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.patch(`/api/users/${user.id}/privacy`, { is_private: !isPrivate }, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+      setIsPrivate(res.data.is_private);
+      const updated = { ...user, is_private: res.data.is_private };
+      localStorage.setItem('user', JSON.stringify(updated));
+      onSaved(updated);
+    } catch (err) {
+      console.error('Error toggling privacy', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(127,90,240,0.08)', border: '1px solid rgba(127,90,240,0.2)', color: '#c4b5fd', fontSize: 13, lineHeight: 1.5 }}>
+        {isPrivate
+          ? '🔒 Cuenta privada: Solo tus seguidores aprobados pueden ver tus posts'
+          : '🌍 Cuenta pública: Todos pueden ver tus posts y seguirte sin aprobación'
+        }
+      </div>
+      <button onClick={togglePrivacy} disabled={loading} style={{ padding: '12px 18px', borderRadius: 12, background: isPrivate ? 'linear-gradient(135deg,#2cb67d,#10b981)' : 'rgba(127,90,240,0.15)', border: `1px solid ${isPrivate ? 'rgba(52,211,153,0.4)' : 'rgba(127,90,240,0.3)'}`, color: isPrivate ? '#ffffff' : '#c4b5fd', fontWeight: 700, cursor: 'pointer', fontSize: 15, minHeight: 48 }}>
+        {loading ? '...' : (isPrivate ? '🔒 Hacerla pública' : '🔒 Hacerla privada')}
+      </button>
+    </div>
+  );
+}
+
+// Main Settings Page
 export default function Settings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user')) || {};
-  const [prefs, setPrefs] = useState(loadPrefs);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const tab = location.hash?.slice(1) || 'perfil';
 
-  useEffect(() => {
-    if (!user?.id) return;
-    axios.get('/api/users/' + user.id + '/settings').then(res => setIsPrivate(!!res.data.is_private)).catch(() => {});
-  }, []); // eslint-disable-line
+  const [profile, setProfile] = useState(user);
 
-  const logout = () => { localStorage.removeItem('user'); localStorage.removeItem('token'); window.location.replace('/login'); };
+  const handleProfileSaved = (updated) => {
+    setProfile(updated);
+    localStorage.setItem('user', JSON.stringify(updated));
+  };
 
-  const WHO_CAN = [{ value: 'everyone', label: 'Todos' }, { value: 'following', label: 'Solo a quienes sigo' }, { value: 'nobody', label: 'Nadie' }];
-  const LANG_OPTIONS = [{ value: 'es', label: 'Espanol' }, { value: 'en', label: 'English' }, { value: 'pt', label: 'Portugues' }, { value: 'fr', label: 'Francais' }];
-  const ACCOUNT_TYPES = [{ value: 'normal', label: 'Personal' }, { value: 'creator', label: 'Creador' }, { value: 'business', label: 'Negocio' }];
+  const logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem(PREFS_KEY);
+    window.location.replace('/login');
+  };
+
+  const tabs = [
+    { id: 'perfil', label: 'Perfil', icon: '👤' },
+    { id: 'datos', label: 'Datos', icon: '📋' },
+    { id: 'seguridad', label: 'Seguridad', icon: '🔐' },
+    { id: 'privacidad', label: 'Privacidad', icon: '🔒' },
+  ];
 
   return (
-    <div style={{ maxWidth: 620, margin: '0 auto', paddingBottom: 80, background: '#0e0e1a', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#7f5af0', fontSize: 22, cursor: 'pointer', padding: 0 }}>&#8249;</button>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#e2e8f0' }}>Configuracion</h1>
+    <div style={{ maxWidth: 520, margin: '0 auto', paddingBottom: 100, minHeight: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.07)', position: 'sticky', top: 0, background: 'rgba(5,7,13,0.95)', backdropFilter: 'blur(10px)', zIndex: 100 }}>
+        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#7f5af0', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', minHeight: 44, minWidth: 44, justifyContent: 'center' }}>
+          <MdOutlineArrowBack size={22} />
+        </button>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#e2e8f0', flex: 1 }}>Configuración</h1>
       </div>
 
-      <SectionHeader title="Centro de cuentas" />
-      <NavItem icon="&#128100;" label="Datos personales" sub="Nombre, usuario, correo, edad, origen" path="/settings/datos-personales" />
-      <NavItem icon="&#128274;" label="Contrasena y seguridad" sub="Cambiar contrasena, 2FA" path="/settings/contrasena" />
-      <NavItem icon="&#128279;" label="Experiencias conectadas" sub="Apps y sitios vinculados" path="/settings/experiencias" />
-      <NavItem icon="&#128226;" label="Preferencias de anuncios" sub="Intereses publicitarios" path="/settings/anuncios" />
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)', padding: '0 16px', overflow: 'auto', scrollbarWidth: 'none' }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => navigate(`#${t.id}`)} style={{ padding: '12px 14px', background: 'none', border: 'none', borderBottom: tab === t.id ? '2px solid #7f5af0' : '2px solid transparent', color: tab === t.id ? '#e2e8f0' : '#475569', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', transition: 'border-color 0.2s' }}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
 
-      <SectionHeader title="Notas" />
-      <NavItem icon="&#11088;" label="Guardados" path="/favoritos" />
-      <NavItem icon="&#128230;" label="Archivo" sub="Ideas y vibes archivados" path="/settings/archivo" />
-      <NavItem icon="&#9889;" label="Actividad" path="/actividad" />
-      <NavItem icon="&#128276;" label="Notificaciones" path="/notificaciones" />
-      <NavItem icon="&#8987;" label="Administracion del tiempo" path="/tiempo" />
+      {/* Content */}
+      <div style={{ padding: '20px 16px' }}>
+        {tab === 'perfil' && (
+          <>
+            <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>Foto de perfil</h2>
+            <PhotoEditor user={profile} onSaved={handleProfileSaved} />
+          </>
+        )}
 
-      <SectionHeader title="Quien puede ver tu contenido" />
-      <NavItem icon={isPrivate ? '&#128274;' : '&#127760;'} label="Privacidad de la cuenta" sub={isPrivate ? 'Cuenta privada — solo seguidores aprobados' : 'Cuenta publica — visible para todos'} path="/settings/privacidad-cuenta" />
-      <NavItem icon="&#128154;" label="Mejores amigos" sub="Gestiona tu lista de mejores amigos" path="/mejores-amigos" />
-      <ToggleItem icon="&#128260;" label="Publicaciones cruzadas" sub="Compartir automaticamente en otras redes" prefKey="cross_post" prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#128683;" label="Cuentas bloqueadas" path="/bloqueos" />
-      <ToggleItem icon="&#128065;" label="Ocultar historias y videos en directo" sub="No apareceraas en historias activas" prefKey="hide_stories" prefs={prefs} setPrefs={setPrefs} />
-      <ToggleItem icon="&#128065;&#65039;" label="Actividades en la pestana" sub="Mostrar cuando estas activo" prefKey="show_activity" prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#128101;" label="Amigos y sugerencias" path="/explore" />
+        {tab === 'datos' && (
+          <>
+            <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>Información personal</h2>
+            <PersonalDataEditor user={profile} onSaved={handleProfileSaved} />
+          </>
+        )}
 
-      <SectionHeader title="Como pueden interactuar contigo" />
-      <SelectItem icon="&#128172;" label="Mensajes y respuestas" prefKey="who_messages" options={WHO_CAN} prefs={prefs} setPrefs={setPrefs} />
-      <SelectItem icon="&#127991;" label="Etiquetas y menciones" prefKey="who_tags" options={WHO_CAN} prefs={prefs} setPrefs={setPrefs} />
-      <SelectItem icon="&#128173;" label="Comentarios" prefKey="who_comments" options={WHO_CAN} prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#9888;&#65039;" label="Cuentas restringidas" sub="Limita sin bloquear" path="/settings/restringidas" />
-      <ToggleItem icon="&#128228;" label="Compartir y reutilizar" sub="Permitir que otros compartan tus ideas" prefKey="allow_share" prefs={prefs} setPrefs={setPrefs} />
-      <ToggleItem icon="&#128737;" label="Limitar interacciones" sub="Solo seguidores pueden reaccionar" prefKey="limit_interactions" prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#128292;" label="Palabras filtradas" path="/palabras-filtradas" />
-      <NavItem icon="&#10133;" label="Seguir e invitar amigos" path="/explore" />
+        {tab === 'seguridad' && (
+          <>
+            <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>Cambiar contraseña</h2>
+            <PasswordChanger user={profile} />
+          </>
+        )}
 
-      <SectionHeader title="Lo que tu ves" />
-      <NavItem icon="&#11088;" label="Favoritos" path="/favoritos" />
-      <NavItem icon="&#128277;" label="Cuentas silenciadas" path="/cuentas-silenciadas" />
-      <NavItem icon="&#127765;" label="Preferencias de contenido" path="/preferencias-contenido" />
-      <ToggleItem icon="&#10084;&#65039;" label="Ocultar recuentos de me gusta" sub="No veras cuantos likes tienen las publicaciones" prefKey="hide_likes" prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#128142;" label="Suscripciones del creador" path="/suscripciones" />
+        {tab === 'privacidad' && (
+          <>
+            <h2 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: '#e2e8f0' }}>Privacidad de la cuenta</h2>
+            <PrivacySettings user={profile} onSaved={handleProfileSaved} />
+          </>
+        )}
+      </div>
 
-      <SectionHeader title="Tu aplicacion y contenido multimedia" />
-      <NavItem icon="&#128247;" label="Permisos del dispositivo" sub="Camara, microfono, localizacion" path="/permisos" />
-      <NavItem icon="&#128193;" label="Archivos y descargas" sub="Gestion de contenido descargado" path="/settings/archivos" />
-      <NavItem icon="&#9855;" label="Accesibilidad" path="/accesibilidad" />
-      <SelectItem icon="&#127760;" label="Idioma" prefKey="language" options={LANG_OPTIONS} prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#128202;" label="Uso de datos y calidad" path="/uso-datos" />
-      <NavItem icon="&#128272;" label="Permisos de aplicaciones y sitios web" path="/permisos" />
-
-      <SectionHeader title="Centro para familias" />
-      <NavItem icon="&#128106;" label="Supervision" sub="Control parental para cuentas de adolescentes" path="/settings/centro-familias" />
-
-      <SectionHeader title="Tus insights y herramientas" />
-      <NavItem icon="&#128202;" label="Tu panel" path="/insights" />
-      <SelectItem icon="&#127991;" label="Tipo de cuenta" prefKey="account_type_ui" options={ACCOUNT_TYPES} prefs={prefs} setPrefs={setPrefs} />
-      <NavItem icon="&#9989;" label="Verificar perfil" sub={user.verified ? 'Perfil verificado' : 'Obtena la insignia de verificacion'} path="/settings/verificacion" />
-
-      <SectionHeader title="Pedidos y recaudaciones de fondos" />
-      <NavItem icon="&#128722;" label="Pedidos y pagos" path="/settings/pedidos" />
-
-      <SectionHeader title="Mas informacion y ayuda" />
-      <NavItem icon="&#10067;" label="Ayuda" path="/ayuda" />
-      <NavItem icon="&#128737;" label="Centro de privacidad" path="/centro-privacidad" />
-      <NavItem icon="&#8505;&#65039;" label="Estado de la cuenta" path="/settings/estado-cuenta" />
-      <NavItem icon="&#128196;" label="Informacion" path="/settings/informacion" />
-
-      <div style={{ margin: '24px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button onClick={() => alert('Funcion de multiples cuentas proximamente')}
-          style={{ width: '100%', padding: 14, background: 'rgba(127,90,240,0.1)', border: '1px solid rgba(127,90,240,0.3)', borderRadius: 14, color: '#7f5af0', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-          + Anadir cuenta
-        </button>
-        <button onClick={logout}
-          style={{ width: '100%', padding: 14, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 14, color: '#ef4444', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-          Cerrar sesion
+      {/* Logout */}
+      <div style={{ padding: '20px 16px' }}>
+        <button onClick={logout} style={{ width: '100%', padding: '13px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, color: '#ef4444', fontWeight: 700, cursor: 'pointer', fontSize: 15, minHeight: 48 }}>
+          Cerrar sesión
         </button>
       </div>
     </div>

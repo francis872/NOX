@@ -3,10 +3,17 @@ const express = require('express');
 const router = express.Router();
 
 const getOpenAI = () => {
-  if (!process.env.OPENAI_API_KEY) return null;
+  const apiKey = process.env.LLAMA_API_KEY || process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
   const OpenAI = require('openai');
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const baseURL = process.env.LLAMA_BASE_URL || process.env.OPENAI_BASE_URL;
+  return new OpenAI({
+    apiKey,
+    ...(baseURL ? { baseURL } : {}),
+  });
 };
+
+const chatModel = process.env.LLAMA_MODEL || process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
 
 // Moderar texto
 router.post('/moderate', async (req, res) => {
@@ -28,8 +35,14 @@ router.post('/suggest', async (req, res) => {
     if (!openai) return res.status(503).json({ error: 'IA no disponible' });
     const { prompt } = req.body;
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
+      model: chatModel,
+      messages: [
+        {
+          role: 'system',
+          content: 'Eres el asistente de NOX. Responde breve, claro, con criterio y tono natural. Evita relleno y emojis salvo que el usuario ya los use.',
+        },
+        { role: 'user', content: prompt },
+      ],
       max_tokens: 120
     });
     res.json({ suggestion: response.choices[0].message.content });

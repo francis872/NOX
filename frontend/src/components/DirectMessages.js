@@ -1,6 +1,7 @@
 // DirectMessages.js - Mensajería directa via HTTP + polling
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { createRealtimeClient } from '../utils/realtime';
 
 export default function MyLinkMessages({ user, peer }) {
   const [messages, setMessages] = useState([]);
@@ -8,13 +9,21 @@ export default function MyLinkMessages({ user, peer }) {
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
   const [presence, setPresence] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [isPeerTyping, setIsPeerTyping] = useState(false);
+  const [assistantBusy, setAssistantBusy] = useState(false);
   const bottomRef = useRef(null);
   const lastCountRef = useRef(0);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const socketRef = useRef(null);
+  const typingStopTimerRef = useRef(null);
+  const peerTypingTimerRef = useRef(null);
 
   const loadMessages = useCallback(async () => {
     if (!user?.id || !peer?.id) return;
     try {
-      const res = await axios.get(`/api/messages/${user.id}/${peer.id}`);
+      const res = await axios.get(`/api/messages/thread/${user.id}/${peer.id}`);
       const data = res.data || [];
       lastCountRef.current = data.length;
       setMessages(data);
@@ -35,7 +44,7 @@ export default function MyLinkMessages({ user, peer }) {
 
   // Polling cada 3 segundos para recibir mensajes nuevos
   useEffect(() => {
-    const timer = setInterval(loadMessages, 3000);
+    const timer = setInterval(loadMessages, 15000);
     return () => clearInterval(timer);
   }, [loadMessages]);
 
@@ -50,36 +59,182 @@ export default function MyLinkMessages({ user, peer }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text || sending) return;
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!user?.id || !token) return undefined;
+
+    const socket = createRealtimeClient(token);
+    if (!socket) return undefined;
+
+    socketRef.current = socket;
+
+    const handleIncoming = (message) => {
+      const belongsToThread =
+        String(message.sender_id) === String(peer?.id) ||
+        String(message.receiver_id) === String(peer?.id);
+      if (!belongsToThread) return;
+
+      setMessages((prev) => {
+        const withoutOptimistic = prev.filter((item) => !String(item.id).startsWith('opt_'));
+        if (withoutOptimistic.some((item) => String(item.id) === String(message.id))) return withoutOptimistic;
+        return [...withoutOptimistic, message];
+      });
+    };
+
+    const handleTyping = ({ from }) => {
+      if (String(from) !== String(peer?.id)) return;
+      setIsPeerTyping(true);
+      clearTimeout(peerTypingTimerRef.current);
+      peerTypingTimerRef.current = setTimeout(() => setIsPeerTyping(false), 2200);
+    };
+
+    const handleTypingStop = ({ from }) => {
+      if (String(from) !== String(peer?.id)) return;
+      setIsPeerTyping(false);
+      clearTimeout(peerTypingTimerRef.current);
+    };
+
+    socket.on('dm:new', handleIncoming);
+    socket.on('dm:sent', handleIncoming);
+    socket.on('dm:typing', handleTyping);
+    socket.on('dm:typing_stop', handleTypingStop);
+
+    return () => {
+      clearTimeout(peerTypingTimerRef.current);
+      socket.off('dm:new', handleIncoming);
+      socket.off('dm:sent', handleIncoming);
+      socket.off('dm:typing', handleTyping);
+      socket.off('dm:typing_stop', handleTypingStop);
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [peer?.id, user?.id]);
+
+  const stopTyping = useCallback(() => {
+    clearTimeout(typingStopTimerRef.current);
+    if (socketRef.current?.connected && peer?.id) {
+      socketRef.current.emit('dm:typing_stop', { to: peer.id });
+    }
+  }, [peer?.id]);
+
+  const emitTyping = useCallback(() => {
+    if (!socketRef.current?.connected || !peer?.id) return;
+    socketRef.current.emit('dm:typing', { to: peer.id });
+    clearTimeout(typingStopTimerRef.current);
+    typingStopTimerRef.current = setTimeout(() => {
+      socketRef.current?.emit('dm:typing_stop', { to: peer.id });
+    }, 1400);
+  }, [peer?.id]);
+
+  const sendPayload = async ({ content, mediaType = 'text', mediaData = null }) => {
+    if (sending) return;
     setSending(true);
     setErr('');
-    // Optimistic update
     const optimistic = {
       id: `opt_${Date.now()}`,
       sender_id: user.id,
       receiver_id: peer.id,
-      content: text,
+      content: content || '',
+      media_type: mediaType,
+      media_data: mediaData,
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, optimistic]);
-    setInput('');
     try {
-      await axios.post('/api/messages', {
-        sender_id: user.id,
-        receiver_id: peer.id,
-        content: text,
-      });
-      // Reload to get real ID from server
-      await loadMessages();
-    } catch {
-      setErr('No se pudo enviar. Intenta de nuevo.');
+      stopTyping();
+      if (socketRef.current?.connected) {
+        const response = await new Promise((resolve) => {
+          socketRef.current.emit('dm:send', {
+            to: peer.id,
+            content: content || '',
+            media_type: mediaType,
+            media_data: mediaData,
+          }, resolve);
+        });
+
+        if (!response?.ok) {
+          const error = new Error(response?.error || 'No se pudo enviar.');
+          error.code = response?.code;
+          throw error;
+        }
+
+        setMessages(prev => prev.map((m) => (
+          m.id === optimistic.id ? response.message : m
+        )));
+      } else {
+        await axios.post('/api/messages', {
+          sender_id: user.id,
+          receiver_id: peer.id,
+          content: content || '',
+          media_type: mediaType,
+          media_data: mediaData,
+        });
+        await loadMessages();
+      }
+    } catch (e) {
+      if (e.response?.data?.code === 'DM_REQUEST_REQUIRED' || e.code === 'DM_REQUEST_REQUIRED') {
+        setErr('Cuenta privada: se envió solicitud y debes esperar aprobación.');
+      } else {
+        setErr('No se pudo enviar. Intenta de nuevo.');
+      }
       setMessages(prev => prev.filter(m => m.id !== optimistic.id));
-      setInput(text);
     } finally {
       setSending(false);
+    }
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || sending) return;
+    setInput('');
+    await sendPayload({ content: text });
+  };
+
+  const suggestReply = async () => {
+    if (!peer?.username || assistantBusy) return;
+    setAssistantBusy(true);
+    setErr('');
+    try {
+      const history = messages.slice(-6).map((message) => (
+        `${String(message.sender_id) === String(user?.id) ? 'Yo' : peer.username}: ${message.content || '[media]'}`
+      )).join('\n');
+      const res = await axios.post('/api/ai/suggest', {
+        prompt: `Escribe una respuesta breve, natural y con tono inteligente para este chat de NOX. No uses comillas ni prefacios.\n\nContexto:\n${history}\n\nBorrador actual: ${input || '(vacío)'}`,
+      });
+      setInput((res.data?.suggestion || '').trim());
+    } catch {
+      setErr('La ayuda de IA no está disponible ahora.');
+    } finally {
+      setAssistantBusy(false);
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (recording) {
+      recorderRef.current?.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (ev) => chunksRef.current.push(ev.data);
+      recorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          await sendPayload({ content: '🎤 Nota de voz', mediaType: 'audio', mediaData: ev.target.result });
+        };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach((t) => t.stop());
+        setRecording(false);
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      setErr('No se pudo iniciar el micrófono.');
     }
   };
 
@@ -120,6 +275,12 @@ export default function MyLinkMessages({ user, peer }) {
           </div>
         )}
 
+        {isPeerTyping && (
+          <div style={{ textAlign:'left', fontSize:12, color:'#8b9bb3', marginBottom:8, paddingLeft:6 }}>
+            {peer?.username} está escribiendo...
+          </div>
+        )}
+
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: '#334155', fontSize: 13, padding: '60px 0' }}>
             <div style={{ fontSize: 36, marginBottom: 10 }}>💬</div>
@@ -145,7 +306,11 @@ export default function MyLinkMessages({ user, peer }) {
                   color: '#e2e8f0', fontSize: 14, lineHeight: 1.5,
                   wordBreak: 'break-word',
                 }}>
-                  {msg.content}
+                  {msg.media_type === 'audio' && msg.media_data ? (
+                    <audio controls src={msg.media_data} style={{ maxWidth: 220 }} />
+                  ) : (
+                    msg.content
+                  )}
                 </div>
                 <div style={{
                   fontSize: 10, color: '#334155', marginTop: 3,
@@ -174,9 +339,27 @@ export default function MyLinkMessages({ user, peer }) {
         display: 'flex', gap: 10, alignItems: 'center',
         background: 'rgba(10,10,20,0.6)',
       }}>
+        <button
+          type="button"
+          onClick={() => setInput((prev) => `${prev}${prev ? ' ' : ''}🔥`)}
+          style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', cursor: 'pointer' }}
+        >
+          🔥
+        </button>
+        <button
+          type="button"
+          onClick={() => setInput((prev) => `${prev}${prev ? ' ' : ''}😂`)}
+          style={{ width: 34, height: 34, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)', color: '#e2e8f0', cursor: 'pointer' }}
+        >
+          😂
+        </button>
         <input
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={e => {
+            setInput(e.target.value);
+            if (e.target.value.trim()) emitTyping();
+            else stopTyping();
+          }}
           placeholder={`Mensaje a ${peer?.username}...`}
           disabled={sending}
           style={{
@@ -186,8 +369,38 @@ export default function MyLinkMessages({ user, peer }) {
             outline: 'none', transition: 'border-color 0.2s',
           }}
           onFocus={e => e.target.style.borderColor = 'rgba(127,90,240,0.5)'}
-          onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+          onBlur={e => {
+            e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+            stopTyping();
+          }}
         />
+        <button
+          type="button"
+          onClick={suggestReply}
+          disabled={assistantBusy || sending}
+          title="Sugerir respuesta con IA"
+          style={{
+            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+            background: assistantBusy ? 'rgba(76,201,240,0.25)' : 'rgba(76,201,240,0.14)',
+            border: '1px solid rgba(76,201,240,0.26)', color:'#dff7ff',
+            cursor: assistantBusy || sending ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {assistantBusy ? '…' : 'AI'}
+        </button>
+        <button
+          type="button"
+          onClick={toggleRecording}
+          disabled={sending}
+          style={{
+            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
+            background: recording ? 'rgba(239,68,68,0.9)' : 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.16)', color:'#fff',
+            cursor: sending ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {recording ? '■' : '🎤'}
+        </button>
         <button
           type="submit"
           disabled={sending || !input.trim()}

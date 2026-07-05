@@ -79,8 +79,8 @@ export default function Explore() {
   return (
     <div style={{ maxWidth:640, margin:'0 auto', padding:'0 16px 80px' }}>
       <div style={{ padding:'24px 0 20px' }}>
-        <h2 style={{ margin:0, fontSize:22, fontWeight:800, color:'#e2e8f0' }}>Explorar</h2>
-        <p style={{ margin:'4px 0 0', fontSize:14, color:'#475569' }}>Descubre a otros usuarios de NOX</p>
+        <h2 style={{ margin:0, fontSize:22, fontWeight:800, color:'#e2e8f0' }}>Descubrir</h2>
+        <p style={{ margin:'4px 0 0', fontSize:14, color:'#475569' }}>Conecta en tiempo real con creadores, historias y nuevas cuentas.</p>
       </div>
       <div style={{ position:'relative', marginBottom:20 }}>
         <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#475569' }}>&#128269;</span>
